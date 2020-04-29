@@ -113,29 +113,7 @@ export class mapRenderer {
         this.gl.drawArrays(drawMode, 0, length);
     }
     renderPolygon2dFromBuffer(bufferSet: GPUBufferSet, viewMatrix: Float32Array): void {
-        this.gl.useProgram(this.polyProgam.program);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[0].buffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
-        this.gl.vertexAttribPointer(
-            this.polyProgam.attribLocations.get("vertexPosition"),
-            2,
-            this.gl.FLOAT,
-            false,
-            0,
-            0);
-        
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[1].buffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
-        this.gl.vertexAttribPointer(
-            this.polyProgam.attribLocations.get("vertexColor"),
-            3,
-            this.gl.FLOAT,
-            false,
-            0,
-            0);
-
-        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, bufferSet.head);
+        this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, viewMatrix);
     }
     renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, lineThickness: number, viewMatrix = mat3.create()){
         let drawMode = this.gl.TRIANGLE_STRIP

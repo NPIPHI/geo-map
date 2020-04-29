@@ -62,13 +62,9 @@ export class GPUBufferSet{
             this.replace(swapLocation, location);
             this.holes.splice(this.holes.indexOf(swapLocation), 1);
         } else {
-            if(this.bufferSize - this.head > location.width){
-                location.offset = this.head;
-                this.head += location.width;
-                this.putMemory(location);
-            } else {
-                throw("ran out of buffer")//TODO implement realocation of buffer
-            }
+            location.offset = this.head;
+            this.head += location.width;
+            this.putMemory(location);
         }
     }
     addArray(locations: GPUMemory[]){
@@ -78,11 +74,9 @@ export class GPUBufferSet{
         if(swapLocation){
             insertHead = swapLocation.offset
             this.holes.splice(this.holes.indexOf(swapLocation), 1);
-        } else if(this.bufferSize - this.head > unifiedWidth){
+        } else {
             insertHead = this.head;
             this.head += unifiedWidth;
-        } else {
-            throw("ran out of buffer");
         }
         let localHead = 0;
         locations.forEach(location => {
@@ -105,7 +99,22 @@ export class GPUBufferSet{
             })
             unifiedArrays.push(attribArray);
         }
-        this.putMemoryChunck(insertHead, unifiedArrays);
+        this.putMemoryChunck(insertHead, unifiedWidth, unifiedArrays);
+    }
+    private reallocateBuffers(minSize: number){
+        this.resizeBuffers(Math.max(Math.floor(this.bufferSize * growthRatio), minSize));
+    }
+    private resizeBuffers(size: number){
+        this.buffers.forEach(buffer=>{
+            let newBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.COPY_WRITE_BUFFER, newBuffer);
+            gl.bufferData(gl.COPY_WRITE_BUFFER, size * buffer.byteSize, gl.STATIC_COPY);
+            gl.bindBuffer(gl.COPY_READ_BUFFER, buffer.buffer);
+            gl.copyBufferSubData(gl.COPY_READ_BUFFER, gl.COPY_WRITE_BUFFER, 0, 0, this.bufferSize * buffer.byteSize);
+            gl.deleteBuffer(buffer.buffer);
+            buffer.buffer = newBuffer;
+        });
+        this.bufferSize = size;
     }
     private clearMemory(location: GPUMemory){
         this.buffers.forEach(buffer=>{
@@ -115,9 +124,12 @@ export class GPUBufferSet{
         })
     }
     private putMemory(memory: GPUMemory){
-        this.putMemoryChunck(memory.offset, memory.data);
+        this.putMemoryChunck(memory.offset, memory.width, memory.data);
     }
-    private putMemoryChunck(offset: number, data: (Float32Array | Int32Array)[]){
+    private putMemoryChunck(offset: number, width: number, data: (Float32Array | Int32Array)[]){
+        while(offset + width > this.bufferSize){
+            this.reallocateBuffers(offset + width - this.bufferSize);
+        }
         for(let i = 0; i < this.buffers.length; i++){
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[i].buffer);
             gl.bufferSubData(gl.ARRAY_BUFFER, this.buffers[i].byteSize * offset, data[i]);
@@ -163,3 +175,14 @@ export class GPUMemory{
         return new GPUMemory(this.offset + splitWidth, []);
     }
 }
+
+/*
+preformance:
+adding 80000 by array in vector mode takes ~30 ms
+adding 80000 individualy in vector mode takes 400 ms
+adding 10000 by array in vector mode takes ~4 ms
+adding 10000 individualy in vector mode takes 6-11 ms
+adding 1 takes 0.03 ms for dense array
+adding 1 takes 0.3 ms for very very hole filled array
+resizing is very very fast
+*/

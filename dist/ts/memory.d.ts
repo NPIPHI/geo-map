@@ -14,6 +14,8 @@ export declare class GPUBufferSet {
     removeArray(locations: GPUMemory[]): void;
     add(location: GPUMemory): void;
     addArray(locations: GPUMemory[]): void;
+    private reallocateBuffers;
+    private resizeBuffers;
     private clearMemory;
     private putMemory;
     private putMemoryChunck;

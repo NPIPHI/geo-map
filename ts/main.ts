@@ -22,6 +22,7 @@ var drawParams = {
     poly: true
 }
 
+{
 window.addEventListener("keydown", key=>{
     if(key.key == "r"){
         cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
@@ -75,6 +76,7 @@ window.addEventListener("pointermove", pointer=>{
         invalidated = true;
     }
 })
+}
 
 async function init() {
     if(window.sessionStorage.getItem("VIEW")){
@@ -89,15 +91,24 @@ async function init() {
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
     let points = await loadMap();
-    bufferTest = GPUBufferSet.createFromSize([2*4,3*4], 1000000);
-    let time1 = performance.now();
+
     let bufferMemory = bufferSetTest(points);
-    bufferTest.addArray(bufferMemory);
+    let last = bufferMemory.pop();
+
+    let time1 = performance.now();
+    bufferTest = GPUBufferSet.create([2*4,3*4]);
+    bufferMemory.forEach(mem=>bufferTest.add(mem))
+    bufferMemory.forEach(mem=>{if (Math.random()>0.5) bufferTest.remove(mem)});
+
     let time2 = performance.now();
     polyBuffer = polygonBuffer(points);
+
     let time3 = performance.now();
-    console.log(`memory managed took: ${time2-time1} ms`)
-    console.log(`one big buffert took: ${time3-time2} ms`)
+    bufferTest.add(last);
+    let time4 = performance.now();
+    console.log(`memory managed took: ${time2-time1} ms`);
+    console.log(`one big buffert took: ${time3-time2} ms`);
+    console.log(`one took: ${time4-time3} ms`);
     oLineBuffer = outlineBuffer(points);
     liBuffer = polyFillLineBuffer(points);
     loop();
@@ -110,7 +121,6 @@ function loop(){
             renderer.renderLine2d(liBuffer.vertexBuffer, liBuffer.colorBuffer, liBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
         }
         if(drawParams.poly){
-            //renderer.renderPolygon2d(polyBuffer.vertexBuffer, polyBuffer.colorBuffer, polyBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
             renderer.renderPolygon2dFromBuffer(bufferTest, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
         }
         if(drawParams.outline){
