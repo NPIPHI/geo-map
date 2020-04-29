@@ -160,8 +160,6 @@ export class bufferConstructor {
                 }
                 normalArray[attribIndex * 2] = normX;
                 normalArray[attribIndex * 2 + 1] = normY;
-                //normalArray[attribIndex * 2 + 2] = -0;
-                //normalArray[attribIndex * 2 + 3] = -0;
                 normalArray[attribIndex * 2 + 2] = -normX;
                 normalArray[attribIndex * 2 + 3] = -normY;
 
@@ -175,8 +173,8 @@ export class bufferConstructor {
             normalArray[startAttribIndex * 2 + 1] = normalArray[startAttribIndex * 2 + 3];
 
             //insert trailing degerate point
-            vertexArray[attribIndex] = vertexArray[attribIndex - 2];
-            vertexArray[attribIndex + 1] = vertexArray[attribIndex - 1];
+            vertexArray[attribIndex * 2] = vertexArray[attribIndex * 2 - 2];
+            vertexArray[attribIndex * 2 + 1] = vertexArray[attribIndex * 2 - 1];
 
             normalArray[attribIndex * 2] = normalArray[attribIndex * 2 - 2];
             normalArray[attribIndex * 2 + 1] = normalArray[attribIndex * 2 - 1];

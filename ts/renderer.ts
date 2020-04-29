@@ -30,7 +30,7 @@ export class mapRenderer {
     }
     renderMap(map: geoMap, viewMatrix: Float32Array){
         this.renderLine2dFromBuffer(map.lines, viewMatrix);
-        //this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
+        this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
         this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
     }
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void {

@@ -28,6 +28,11 @@ export declare class GPUMemoryTest implements GPUMemoryObject {
     GPUData: Float32Array[] | Int32Array[];
     constructor(width: number, data: Float32Array[] | Int32Array[]);
 }
+export declare class GPUMemoryPointer {
+    GPUOffset: number;
+    GPUWidth: number;
+    constructor(offset: number, width: number);
+}
 export interface GPUMemoryObject {
     GPUOffset: number;
     GPUWidth: number;

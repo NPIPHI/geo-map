@@ -166,6 +166,14 @@ export class GPUMemoryTest implements GPUMemoryObject{
     }
 }
 
+export class GPUMemoryPointer{
+    GPUOffset: number;
+    GPUWidth: number;
+    constructor(offset: number, width: number){
+        this.GPUWidth = offset;
+        this.GPUWidth = width;
+    }
+}
 export interface GPUMemoryObject{
     GPUOffset: number; //must be -1 on an uninnitilized object
     GPUWidth: number;
