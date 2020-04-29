@@ -1,27 +1,26 @@
-import { GPUMemoryObject } from "./memory";
+import { GPUBufferSet } from "./memory";
 export declare class bufferConstructor {
     static lineBuffer(pointStrips: Float32Array[]): {
-        vertexBuffer: WebGLBuffer;
-        colorBuffer: WebGLBuffer;
-        length: number;
+        buffer: GPUBufferSet;
+        features: {
+            offsets: Int32Array;
+            widths: Int32Array;
+        };
     };
     static polygonBuffer(pointStrips: Float32Array[]): {
-        vertexBuffer: WebGLBuffer;
-        colorBuffer: WebGLBuffer;
-        length: number;
-    };
-    static polyFillLineBuffer(pointStrips: Float32Array[]): {
-        vertexBuffer: WebGLBuffer;
-        colorBuffer: WebGLBuffer;
-        length: number;
+        buffer: GPUBufferSet;
+        features: {
+            offsets: Int32Array;
+            widths: Int32Array;
+        };
     };
     static outlineBuffer(pointStrips: Float32Array[]): {
-        vertexBuffer: WebGLBuffer;
-        normalBuffer: WebGLBuffer;
-        styleBuffer: WebGLBuffer;
-        length: number;
+        buffer: GPUBufferSet;
+        features: {
+            offsets: Int32Array;
+            widths: Int32Array;
+        };
     };
-    static bufferSetTest(pointStrips: Float32Array[]): GPUMemoryObject[];
 }
 export declare class featureConstructor {
     static lineBuffer(strip: Float32Array): {

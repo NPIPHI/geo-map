@@ -7,7 +7,7 @@ export class GPUBufferSet{
     head: number;
     holes: Map<number, number[]>;
     buffers: {byteSize: number, buffer: WebGLBuffer}[];
-    private constructor(elementWidths: number[], buffers: WebGLBuffer[], size: number){
+    private constructor(elementWidths: number[], buffers: WebGLBuffer[], size: number, head: number = 0){
         elementWidths.forEach(ele=>{
             if(ele%4){
                 console.warn("The Index Width supplied was not a multipul of 4, element widths are in bytes")
@@ -19,7 +19,7 @@ export class GPUBufferSet{
         }
         this.bufferSize = size;
         this.holes = new Map<number, number[]>();
-        this.head = 0;
+        this.head = head;
     }
     static create(elementWidths: number[]){
         let buffers = elementWidths.map(byteSize=>{
@@ -40,7 +40,7 @@ export class GPUBufferSet{
         return new GPUBufferSet(elementWidths, buffers, size);
     }
     static createFromBuffers(elementWidths: number[], buffers: WebGLBuffer[], size: number){//size in indices
-        return new GPUBufferSet(elementWidths, buffers, size);
+        return new GPUBufferSet(elementWidths, buffers, size, size);
     }
     remove(location: GPUMemoryObject){
         this.clearMemory(location);
