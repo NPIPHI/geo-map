@@ -8,7 +8,7 @@ var renderer: mapRenderer;
 var canvas: HTMLCanvasElement;
 var polyBuffer: {vertexBuffer: WebGLBuffer, edgeBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
 var liBuffer: {vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
-var oLineBuffer: {vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
+var oLineBuffer: {vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number}
 var cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
 var baseCam = {x: 0, y: 0}
 var mouse = {x: 0, y: 0, down: false}
@@ -107,7 +107,7 @@ function loop(){
             renderer.renderPolygon2d(polyBuffer.vertexBuffer, polyBuffer.colorBuffer, polyBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
         }
         if(drawParams.outline){
-            renderer.renderOutline2d(oLineBuffer.vertexBuffer, oLineBuffer.normalBuffer, oLineBuffer.colorBuffer, oLineBuffer.length, 0.001, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY));
+            renderer.renderOutline2d(oLineBuffer.vertexBuffer, oLineBuffer.normalBuffer, oLineBuffer.styleBuffer, oLineBuffer.length, 0.001, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY));
         }
         invalidated = false;
     }

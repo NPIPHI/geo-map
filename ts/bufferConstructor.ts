@@ -1,7 +1,7 @@
 import { gl } from "./main"
 import earcut from "earcut"
 
-function buffer(array: Float32Array) {
+function buffer(array: ArrayBuffer) {
     let buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
@@ -168,11 +168,11 @@ export function polyFillLineBuffer(pointStrips: Float32Array[]): { vertexBuffer:
     return { vertexBuffer, colorBuffer, length }
 }
 
-export function outlineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number } {
+export function outlineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number } {
     let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
     let vertexArray = new Float32Array(length * 2);
     let normalArray = new Float32Array(length * 2);
-    let colorArray = new Float32Array(length * 3);
+    let styleArray = new Int32Array(length);
     let vIndex = 0;
     let nIndex = 0;
     let cIndex = 0;
@@ -231,17 +231,13 @@ export function outlineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebG
             }
             normalArray[nIndex] = normX;
             normalArray[nIndex + 1] = normY;
+            //normalArray[nIndex + 2] = -0;
+            //normalArray[nIndex + 3] = -0;
             normalArray[nIndex + 2] = -normX;
             normalArray[nIndex + 3] = -normY;
             nIndex += 4;
 
-            colorArray[cIndex] = 1;
-            colorArray[cIndex + 1] = 1;
-            colorArray[cIndex + 2] = 1;
-            colorArray[cIndex + 3] = 1;
-            colorArray[cIndex + 4] = 1;
-            colorArray[cIndex + 5] = 1;
-            cIndex += 6;
+            cIndex += 2;
         }
         //insert leading degerate point
         vertexArray[startVIndex] = vertexArray[startVIndex+2];
@@ -262,57 +258,11 @@ export function outlineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebG
         cIndex += 3;
     });
 
+    for(let i = 0; i < styleArray.length/2; i++){
+        styleArray[i] = 1;
+    }
     let vertexBuffer = buffer(vertexArray);
     let normalBuffer = buffer(normalArray);
-    let colorBuffer = buffer(colorArray);
-    return {vertexBuffer, normalBuffer, colorBuffer, length};
-}
-export function quadBuffer(pointStrips: { x: number, y: number }[][]): { vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number } {//broke rn
-    const lineWidth = 0.05;
-    let length = 0;
-    pointStrips.forEach(strip => {
-        length += strip.length * 2;
-    })
-    length *= 2; //2 triangles per line
-    let vertexArray = new Float32Array(length * 2);
-    let index = 0;
-    pointStrips.forEach(strip => {
-        index += 2;
-        for (let i = 0; i < strip.length - 1; i++) {
-            let norm = { x: strip[i].y - strip[i + 1].y, y: -strip[i].x + strip[i + 1].x }
-            let normMag = Math.sqrt(norm.x * norm.x + norm.y * norm.y);
-            norm.x *= lineWidth / normMag;
-            norm.y *= lineWidth / normMag;
-            vertexArray[index] = strip[i].x - norm.x;
-            vertexArray[index + 1] = strip[i].y - norm.y;
-            if (i == 0) {
-                vertexArray[index - 2] = vertexArray[index]
-                vertexArray[index - 1] = vertexArray[index + 1]
-            }
-            vertexArray[index + 2] = strip[i].x + norm.x;
-            vertexArray[index + 3] = strip[i].y + norm.y;
-            index += 4;
-        }
-        vertexArray[index] = vertexArray[index - 2];
-        vertexArray[index + 1] = vertexArray[index - 1];
-        index += 2;
-    })
-
-    let colorData = new Float32Array(length * 3);
-    for (let i = 0; i < colorData.length; i += 3) {
-        colorData[i] = 1;
-        colorData[i + 1] = 1;
-        colorData[i + 2] = 1;
-
-    }
-
-    let vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
-
-    let colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
-
-    return { vertexBuffer, colorBuffer, length }
+    let styleBuffer = buffer(styleArray);
+    return {vertexBuffer, normalBuffer, styleBuffer, length};
 }
