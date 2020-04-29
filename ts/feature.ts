@@ -1,45 +1,15 @@
-import { GPUMemoryObject, GPUMemoryTest } from "./memory";
+import { GPUMemoryObject, GPUMemoryPointer } from "./memory";
 import { featureConstructor } from "./bufferConstructor"
 
 export class feature {
-    line: lineMemory;
-    outline: outlineMemory;
-    polygon: polygonMemory;
-    constructor(outline: Float32Array){
-        this.line = new lineMemory(outline);
-        this.outline = new outlineMemory(outline);
-        this.polygon = new polygonMemory(outline);
+    outline: GPUMemoryObject | GPUMemoryPointer;
+    polygon: GPUMemoryObject | GPUMemoryPointer;
+    constructor(outline:  GPUMemoryObject | GPUMemoryPointer, polygon:  GPUMemoryObject | GPUMemoryPointer){
+        this.outline = outline;
+        this.polygon = polygon;
     }
-}
-
-class polygonMemory implements GPUMemoryObject{
-    GPUOffset: number = -1;
-    GPUWidth: number;
-    GPUData: (Float32Array | Int32Array)[];
-    constructor(outline: Float32Array){
-        let GPUinfo = featureConstructor.polygonBuffer(outline);
-        this.GPUWidth = GPUinfo.width;
-        this.GPUData = GPUinfo.data;
-    }
-}
-class lineMemory implements GPUMemoryObject{
-    GPUOffset: number = -1;
-    GPUWidth: number;
-    GPUData: (Float32Array | Int32Array)[];
-    constructor(outline: Float32Array){
-        let GPUinfo = featureConstructor.lineBuffer(outline);
-        this.GPUWidth = GPUinfo.width;
-        this.GPUData = GPUinfo.data;
-    }
-}
-
-class outlineMemory implements GPUMemoryObject {
-    GPUOffset: number = -1;
-    GPUWidth: number;
-    GPUData: (Float32Array | Int32Array)[];
-    constructor(outline: Float32Array){
-        let GPUinfo = featureConstructor.outlineBuffer(outline);
-        this.GPUWidth = GPUinfo.width;
-        this.GPUData = GPUinfo.data;
+    fromPointStrip(strip: Float32Array){
+        this.outline = featureConstructor.outlineBuffer(strip);
+        this.polygon = featureConstructor.polygonBuffer(strip);
     }
 }

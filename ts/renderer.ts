@@ -29,7 +29,6 @@ export class mapRenderer {
         this.outlineProgram = this.initShaderProgram(shaders.outline);
     }
     renderMap(map: geoMap, viewMatrix: Float32Array){
-        this.renderLine2dFromBuffer(map.lines, viewMatrix);
         this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
         this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
     }

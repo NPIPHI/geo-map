@@ -88,9 +88,8 @@ async function init() {
     document.body.appendChild(canvas);
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
-
-    let points = await loadMap();
     let time1 = performance.now();
+    let points = await loadMap();
     map = new geoMap(points);
     let time2 = performance.now();
     console.log(time2-time1);

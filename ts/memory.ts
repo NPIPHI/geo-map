@@ -42,8 +42,8 @@ export class GPUBufferSet{
     static createFromBuffers(elementWidths: number[], buffers: WebGLBuffer[], size: number){//size in indices
         return new GPUBufferSet(elementWidths, buffers, size, size);
     }
-    remove(location: GPUMemoryObject){
-        this.clearMemory(location);
+    remove(location: GPUMemoryObject | GPUMemoryPointer){
+        this.zeroMemory(location);
         if(this.head == location.GPUWidth + location.GPUOffset){
             this.head -= location.GPUWidth;
         } else {
@@ -56,7 +56,7 @@ export class GPUBufferSet{
         }
         location.GPUOffset = -1;
     }
-    removeArray(locations: GPUMemoryObject[]){
+    removeArray(locations: (GPUMemoryObject | GPUMemoryPointer)[]){
         locations.forEach(location=>this.remove(location));
     }
     add(location: GPUMemoryObject){
@@ -121,7 +121,7 @@ export class GPUBufferSet{
         });
         this.bufferSize = size;
     }
-    private clearMemory(location: GPUMemoryObject){
+    private zeroMemory(location: GPUMemoryObject | GPUMemoryPointer){
         this.buffers.forEach(buffer=>{
             let clearMemory = new Float32Array(location.GPUWidth * buffer.byteSize/4);
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
@@ -156,14 +156,9 @@ export class GPUBufferSet{
     }
 }
 
-export class GPUMemoryTest implements GPUMemoryObject{
+export interface GPUMemoryPointer{
     GPUOffset: number;
     GPUWidth: number;
-    GPUData: Float32Array[] | Int32Array[];
-    constructor(width: number, data: Float32Array[] | Int32Array[]){
-        this.GPUWidth = width;
-        this.GPUData = data;
-    }
 }
 
 export class GPUMemoryPointer{
@@ -174,13 +169,22 @@ export class GPUMemoryPointer{
         this.GPUWidth = width;
     }
 }
+
 export interface GPUMemoryObject{
     GPUOffset: number; //must be -1 on an uninnitilized object
     GPUWidth: number;
-    GPUData: (Float32Array | Int32Array)[];
-    
+    GPUData: (Float32Array | Int32Array)[];   
 }
 
+export class GPUMemoryObject{
+    GPUOffset: number; //must be -1 on an uninnitilized object
+    GPUWidth: number;
+    GPUData: (Float32Array | Int32Array)[];
+    constructor(width: number, data: (Float32Array | Int32Array)[]){
+        this.GPUWidth = width;
+        this.GPUData = data;
+    }
+}
 /*
 preformance:
 adding 80000 by array in vector mode takes ~30 ms

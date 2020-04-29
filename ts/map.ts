@@ -1,20 +1,22 @@
 import { feature } from "./feature";
-import { GPUBufferSet } from "./memory";
+import { GPUBufferSet, GPUMemoryPointer } from "./memory";
 import { bufferConstructor } from "./bufferConstructor"
 
 export class geoMap{
     features: feature[];
-    lines: GPUBufferSet;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     constructor(pointStrips: Float32Array[]){
         let outlineData = bufferConstructor.outlineBuffer(pointStrips);
         this.outlines = outlineData.buffer;
-        let lineData = bufferConstructor.lineBuffer(pointStrips);
-        this.lines = lineData.buffer;
         let polygonData = bufferConstructor.polygonBuffer(pointStrips);
         this.polygons = polygonData.buffer;
-        
+
+        this.features = [];
+        for(let i = 0; i < pointStrips.length; i++){
+            this.features.push(new feature(new GPUMemoryPointer(outlineData.features.offsets[i], outlineData.features.widths[i]),
+                                            new GPUMemoryPointer(polygonData.features.offsets[i], polygonData.features.widths[i])));
+        }
     }
     draw(viewMatrix: Float32Array){
 

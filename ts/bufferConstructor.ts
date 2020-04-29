@@ -1,6 +1,6 @@
 import { gl } from "./main"
 import earcut from "earcut"
-import { GPUBufferSet } from "./memory"
+import { GPUBufferSet, GPUMemoryObject } from "./memory"
 
 function buffer(array: ArrayBuffer) {
     let buf = gl.createBuffer();
@@ -194,7 +194,7 @@ export class bufferConstructor {
 }
 
 export class featureConstructor {
-    static lineBuffer(strip: Float32Array): { width: number, data: (Float32Array | Int32Array)[] } {
+    static lineBuffer(strip: Float32Array): GPUMemoryObject {
         let length = strip.length * 2; //2 points per line
         let vertexArray = new Float32Array(length * 2);
         let colorArray = new Float32Array(length * 3);
@@ -219,10 +219,10 @@ export class featureConstructor {
 
         }
 
-        return { width: length, data: [vertexArray, colorArray] }
+        return new GPUMemoryObject(length, [vertexArray, colorArray]);
     }
 
-    static polygonBuffer(strip: Float32Array): { width: number, data: (Float32Array | Int32Array)[] } {
+    static polygonBuffer(strip: Float32Array): GPUMemoryObject {
         let polygonIndexBuffer: number[] = earcut(strip);
         let length = earcut.length;
         let vertexArray = new Float32Array(length * 2);
@@ -249,60 +249,10 @@ export class featureConstructor {
             cIndex += 9;
         }
 
-        return { width: length, data: [vertexArray, colorArray] }
+        return new GPUMemoryObject(length, [vertexArray, colorArray]);
     }
 
-    static polyFillLineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number } {
-        let polygonIndexBuffer: number[][] = [];
-        let length = 0;
-        pointStrips.forEach(strip => {
-            let polygon = earcut(strip);
-            polygonIndexBuffer.push(polygon);
-            length += polygon.length * 2;
-        })
-
-        let vertexArray = new Float32Array(length * 2);
-        let colorArray = new Float32Array(length * 3);
-
-        let vIndex = 0;
-        let cIndex = 0;
-        for (let i = 0; i < polygonIndexBuffer.length; i++) {
-            let c = { r: Math.random(), g: Math.random(), b: Math.random() }
-            for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
-                let v1 = polygonIndexBuffer[i][j];
-                let v2 = polygonIndexBuffer[i][j + 1];
-                let v3 = polygonIndexBuffer[i][j + 2];
-                vertexArray[vIndex + 0] = pointStrips[i][v1 * 2 + 0]
-                vertexArray[vIndex + 1] = pointStrips[i][v1 * 2 + 1]
-                vertexArray[vIndex + 2] = pointStrips[i][v2 * 2 + 0]
-                vertexArray[vIndex + 3] = pointStrips[i][v2 * 2 + 1]
-                vertexArray[vIndex + 4] = pointStrips[i][v2 * 2 + 0]
-                vertexArray[vIndex + 5] = pointStrips[i][v2 * 2 + 1]
-                vertexArray[vIndex + 6] = pointStrips[i][v3 * 2 + 0]
-                vertexArray[vIndex + 7] = pointStrips[i][v3 * 2 + 1]
-                vertexArray[vIndex + 8] = pointStrips[i][v3 * 2 + 0]
-                vertexArray[vIndex + 9] = pointStrips[i][v3 * 2 + 1]
-                vertexArray[vIndex + 10] = pointStrips[i][v1 * 2 + 0]
-                vertexArray[vIndex + 11] = pointStrips[i][v1 * 2 + 1]
-                vIndex += 12;
-
-                for (let i = 0; i < 18; i += 3) {
-                    colorArray[cIndex + i] = c.r;
-                    colorArray[cIndex + i + 1] = c.g;
-                    colorArray[cIndex + i + 2] = c.b;
-
-                }
-                cIndex += 18;
-            }
-        }
-
-        let vertexBuffer = buffer(vertexArray);
-        let colorBuffer = buffer(colorArray);
-
-        return { vertexBuffer, colorBuffer, length }
-    }
-
-    static outlineBuffer(strip: Float32Array): { width: number, data: (Float32Array | Int32Array)[] } {
+    static outlineBuffer(strip: Float32Array): GPUMemoryObject {
         let length = strip.length + 4;
         let vertexArray = new Float32Array(length * 2);
         let normalArray = new Float32Array(length * 2);
@@ -383,6 +333,6 @@ export class featureConstructor {
         normalArray[nIndex] = normalArray[nIndex - 2];
         normalArray[nIndex + 1] = normalArray[nIndex - 1];
 
-        return { width: length, data: [vertexArray, normalArray, styleArray] };
+        return new GPUMemoryObject(length, [vertexArray, normalArray, styleArray]);
     }
 }
