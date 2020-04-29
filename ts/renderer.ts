@@ -2,26 +2,44 @@ import { mat3, vec2 } from "gl-matrix"
 import * as shaders from "./shaders.json"
 import { camera } from "./camera"
 
-class ShaderProgram {
+class PolyShaderProgram {
     program: WebGLProgram
     attribLocations: {
         vertexPosition: number;
-        edgeDistance: number;
         vertexColor: number;
     };
     uniformLocations: {
         viewMatrix: number;
     }
-    constructor(program: WebGLProgram, vertexPosition: WebGLUniformLocation, edgeDistance: WebGLUniformLocation, vertexColor: WebGLUniformLocation, viewMatrix: WebGLUniformLocation) {
+    constructor(program: WebGLProgram, vertexPosition: WebGLUniformLocation, vertexColor: WebGLUniformLocation, viewMatrix: WebGLUniformLocation) {
         this.program = program;
-        this.attribLocations = { vertexPosition: (vertexPosition as number), edgeDistance: (edgeDistance as number), vertexColor: (vertexColor as number) };
-        this.uniformLocations = { viewMatrix: (viewMatrix as number) };
+        this.attribLocations = { vertexPosition: (vertexPosition as number), vertexColor: (vertexColor as number) };
+        this.uniformLocations = { viewMatrix: (viewMatrix as number)};
+    }
+}
+
+class OutlineShaderProgram {
+    program: WebGLProgram
+    attribLocations: {
+        vertexPosition: number;
+        vertexNormal: number;
+        vertexColor: number;
+    };
+    uniformLocations: {
+        viewMatrix: number;
+        lineThickness: number;
+    }
+    constructor(program: WebGLProgram, vertexPosition: WebGLUniformLocation, vertexNormal: WebGLUniformLocation, vertexColor: WebGLUniformLocation, viewMatrix: WebGLUniformLocation, lineThickness: WebGLUniformLocation) {
+        this.program = program;
+        this.attribLocations = { vertexPosition: (vertexPosition as number), vertexNormal: (vertexNormal as number), vertexColor: (vertexColor as number) };
+        this.uniformLocations = { viewMatrix: (viewMatrix as number), lineThickness: (lineThickness as number)  };
     }
 }
 
 export class mapRenderer {
-    gl: WebGL2RenderingContext;
-    program: ShaderProgram;
+    private gl: WebGL2RenderingContext;
+    private polyProgam: PolyShaderProgram;
+    private outlineProgram: OutlineShaderProgram;
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -29,14 +47,15 @@ export class mapRenderer {
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clearDepth(1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        this.program = this.initShaderProgram(shaders.vertex, shaders.fragment);
+        this.polyProgam = this.initShaderProgram(shaders.polygon) as PolyShaderProgram;
+        this.outlineProgram = this.initShaderProgram(shaders.outline) as OutlineShaderProgram;
     }
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix = mat3.create()): void {
-        this.gl.useProgram(this.program.program);
+        this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-        this.gl.enableVertexAttribArray(this.program.attribLocations.vertexPosition);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexPosition);
         this.gl.vertexAttribPointer(
-            this.program.attribLocations.vertexPosition,
+            this.polyProgam.attribLocations.vertexPosition,
             2,
             this.gl.FLOAT,
             false,
@@ -44,60 +63,90 @@ export class mapRenderer {
             0);
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-        this.gl.enableVertexAttribArray(this.program.attribLocations.vertexColor);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexColor);
         this.gl.vertexAttribPointer(
-            this.program.attribLocations.vertexColor,
+            this.polyProgam.attribLocations.vertexColor,
             3,
             this.gl.FLOAT,
             false,
             0,
             0);
 
-        this.gl.uniformMatrix3fv(this.program.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.viewMatrix, false, viewMatrix);
         this.gl.drawArrays(this.gl.LINES, 0, length);
     }
-    renderPolygon2d(vertexBuffer: WebGLBuffer, edgeBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix = mat3.create(), drawMode = this.gl.TRIANGLES): void {
-        this.gl.useProgram(this.program.program);
+    renderPolygon2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix = mat3.create(), drawMode = this.gl.TRIANGLES): void {
+        this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-        this.gl.enableVertexAttribArray(this.program.attribLocations.vertexPosition);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexPosition);
         this.gl.vertexAttribPointer(
-            this.program.attribLocations.vertexPosition,
+            this.polyProgam.attribLocations.vertexPosition,
             2,
             this.gl.FLOAT,
             false,
             0,
             0);
         
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, edgeBuffer);
-        this.gl.enableVertexAttribArray(this.program.attribLocations.edgeDistance);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexColor);
         this.gl.vertexAttribPointer(
-            this.program.attribLocations.edgeDistance,
+            this.polyProgam.attribLocations.vertexColor,
             3,
+            this.gl.FLOAT,
+            false,
+            0,
+            0);
+
+        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.drawArrays(drawMode, 0, length);
+    }
+    renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, lineThickness: number, viewMatrix = mat3.create()){
+        let drawMode = this.gl.TRIANGLE_STRIP
+        this.gl.useProgram(this.outlineProgram.program);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
+        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.vertexPosition);
+        this.gl.vertexAttribPointer(
+            this.outlineProgram.attribLocations.vertexPosition,
+            2,
+            this.gl.FLOAT,
+            false,
+            0,
+            0);
+        
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer); 
+        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.vertexNormal);
+        this.gl.vertexAttribPointer(
+            this.outlineProgram.attribLocations.vertexNormal,
+            2,
             this.gl.FLOAT,
             false,
             0,
             0);
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-        this.gl.enableVertexAttribArray(this.program.attribLocations.vertexColor);
+        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.vertexColor);
         this.gl.vertexAttribPointer(
-            this.program.attribLocations.vertexColor,
+            this.outlineProgram.attribLocations.vertexColor,
             3,
             this.gl.FLOAT,
             false,
             0,
             0);
 
-        this.gl.uniformMatrix3fv(this.program.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.uniform1f(this.outlineProgram.uniformLocations.lineThickness, lineThickness/viewMatrix[0]); 
+        this.gl.uniform1fv(this.outlineProgram.uniformLocations.lineThickness, [0,1,2,3,4,5,0,1,2,3,4,5]); 
+
         this.gl.drawArrays(drawMode, 0, length);
     }
+
     clear(): void {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }
 
-    private initShaderProgram(vsSource: string, fsSource: string): ShaderProgram {
-        const vertexShader = this.loadShader(this.gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = this.loadShader(this.gl.FRAGMENT_SHADER, fsSource);
+    private initShaderProgram(shaderSource: {type: string, fragment: string, vertex: string}): PolyShaderProgram | OutlineShaderProgram{
+        const vertexShader = this.loadShader(this.gl.VERTEX_SHADER, shaderSource.vertex);
+        const fragmentShader = this.loadShader(this.gl.FRAGMENT_SHADER, shaderSource.fragment);
 
         // Create the shader program
 
@@ -112,8 +161,12 @@ export class mapRenderer {
             alert('Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(glShader));
             return null;
         }
-
-        return new ShaderProgram(glShader, this.gl.getAttribLocation(glShader, "worldVertexPosition"), this.gl.getAttribLocation(glShader, "edgeDistance"), this.gl.getAttribLocation(glShader, "vertexColor"), this.gl.getUniformLocation(glShader, "VIEW"));
+        if(shaderSource.type == "Polygon"){
+            return new PolyShaderProgram(glShader, this.gl.getAttribLocation(glShader, "worldVertexPosition"), this.gl.getAttribLocation(glShader, "vertexColor"), this.gl.getUniformLocation(glShader, "VIEW"));
+        }
+        if(shaderSource.type == "Outline"){
+            return new OutlineShaderProgram(glShader, this.gl.getAttribLocation(glShader, "worldVertexPosition"), this.gl.getAttribLocation(glShader, "vertexNormal"), this.gl.getAttribLocation(glShader, "vertexColor"), this.gl.getUniformLocation(glShader, "VIEW"), this.gl.getUniformLocation(glShader, "THICKNESS"));
+        }
     }
 
     private loadShader(type: GLenum, source: string): WebGLShader {

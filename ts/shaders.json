@@ -1,1 +1,9 @@
-{"fragment":"#version 300 es\r\n\r\nin lowp vec3 fragColor;\r\nin lowp vec3 fragEdgeDistance;\r\nout lowp vec3 color;\r\n\r\nvoid main(){\r\n    color = fragColor;\r\n    if(fragEdgeDistance.x > 0.9 || fragEdgeDistance.y > 0.9 || fragEdgeDistance.z > 0.9){\r\n        color = vec3(1, 0, 0);\r\n    }\r\n}","vertex":"#version 300 es\r\n\r\nin vec2 worldVertexPosition;\r\nin vec3 edgeDistance;\r\nin vec3 vertexColor;\r\nuniform mat3 VIEW;\r\n\r\nout vec3 fragColor;\r\nout vec3 fragEdgeDistance;\r\n\r\nvoid main(){\r\n    vec3 transforedPosition = VIEW * vec3(worldVertexPosition.x, worldVertexPosition.y, 1);\r\n    gl_Position = vec4(transforedPosition, 1);\r\n    fragColor = vertexColor;\r\n    fragEdgeDistance = edgeDistance;\r\n}"}
+{"polygon":
+    {"type":"Polygon",
+        "fragment":"#version 300 es\r\n\r\nin lowp vec3 fragColor;\r\nout lowp vec3 color;\r\n\r\nvoid main(){\r\n    color = fragColor;\r\n}",
+        "vertex":"#version 300 es\r\n\r\nin vec2 worldVertexPosition;\r\nin vec3 vertexColor;\r\nuniform mat3 VIEW;\r\n\r\nout vec3 fragColor;\r\n\r\nvoid main(){\r\n    vec3 transforedPosition = VIEW * vec3(worldVertexPosition.x, worldVertexPosition.y, 1);\r\n    gl_Position = vec4(transforedPosition, 1);\r\n    fragColor = vertexColor;\r\n}",
+        "uniforms":["uniform mat3 VIEW","VIEW"]},
+        "outline":{
+            "type":"Outline",
+            "fragment":"#version 300 es\r\n\r\nin lowp vec3 fragColor;\r\nout lowp vec3 color;\r\n\r\nvoid main(){\r\n    color = fragColor;\r\n}",
+            "vertex":"#version 300 es\r\n\r\nin vec2 worldVertexPosition;\r\nin vec2 vertexNormal;\r\nin vec3 vertexColor;\r\n\r\nuniform float THICKNESS;\r\nuniform mat3 VIEW;\r\n\r\nout vec3 fragColor;\r\n\r\nvoid main(){\r\n    vec3 transforedPosition = VIEW * vec3(worldVertexPosition.x + vertexNormal.x * THICKNESS, worldVertexPosition.y + vertexNormal.y * THICKNESS, 1);\r\n    gl_Position = vec4(transforedPosition, 1);\r\n    fragColor = vertexColor;\r\n}"}}

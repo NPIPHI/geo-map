@@ -1,5 +1,5 @@
 import { mapRenderer } from "./renderer"
-import { lineBuffer, quadBuffer, polygonBuffer, polyFillLineBuffer } from "./bufferConstructor"
+import { outlineBuffer, polygonBuffer, polyFillLineBuffer } from "./bufferConstructor"
 import { camera } from "./camera"
 import { loadMap } from "./mapLoad";
 
@@ -8,13 +8,15 @@ var renderer: mapRenderer;
 var canvas: HTMLCanvasElement;
 var polyBuffer: {vertexBuffer: WebGLBuffer, edgeBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
 var liBuffer: {vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
+var oLineBuffer: {vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
 var cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
 var baseCam = {x: 0, y: 0}
 var mouse = {x: 0, y: 0, down: false}
 var invalidated = true;
 var drawParams = {
+    outline: true,
     line: false,
-    poly: true
+    poly: false
 }
 
 window.addEventListener("keydown", key=>{
@@ -27,6 +29,9 @@ window.addEventListener("keydown", key=>{
     }
     if(key.key == "p"){
         drawParams.poly = !drawParams.poly;
+    }
+    if(key.key == "o"){
+        drawParams.outline = !drawParams.outline;
     }
     invalidated = true;
 })
@@ -80,10 +85,15 @@ async function init() {
     document.body.appendChild(canvas);
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
-
+    console.log("loading map")
     let points = await loadMap();
+    console.log("map loaded")
+    oLineBuffer = outlineBuffer(points);
+    console.log("outline loaded")
     polyBuffer = polygonBuffer(points);
+    console.log("polygon loaded")
     liBuffer = polyFillLineBuffer(points);
+    console.log("buffers built")
     loop();
 }
 
@@ -94,7 +104,10 @@ function loop(){
             renderer.renderLine2d(liBuffer.vertexBuffer, liBuffer.colorBuffer, liBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
         }
         if(drawParams.poly){
-            renderer.renderPolygon2d(polyBuffer.vertexBuffer, polyBuffer.edgeBuffer, polyBuffer.colorBuffer, polyBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
+            renderer.renderPolygon2d(polyBuffer.vertexBuffer, polyBuffer.colorBuffer, polyBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
+        }
+        if(drawParams.outline){
+            renderer.renderOutline2d(oLineBuffer.vertexBuffer, oLineBuffer.normalBuffer, oLineBuffer.colorBuffer, oLineBuffer.length, 0.001, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY));
         }
         invalidated = false;
     }

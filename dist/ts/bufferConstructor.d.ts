@@ -14,6 +14,12 @@ export declare function polyFillLineBuffer(pointStrips: Float32Array[]): {
     colorBuffer: WebGLBuffer;
     length: number;
 };
+export declare function outlineBuffer(pointStrips: Float32Array[]): {
+    vertexBuffer: WebGLBuffer;
+    normalBuffer: WebGLBuffer;
+    colorBuffer: WebGLBuffer;
+    length: number;
+};
 export declare function quadBuffer(pointStrips: {
     x: number;
     y: number;
