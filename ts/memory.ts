@@ -5,7 +5,7 @@ const preallocatedSize = 100;
 export class GPUBufferSet{
     bufferSize: number;
     head: number;
-    holes: GPUMemory[];
+    holes: Map<number, number[]>;
     buffers: {byteSize: number, buffer: WebGLBuffer}[];
     private constructor(elementWidths: number[], buffers: WebGLBuffer[], size: number){
         elementWidths.forEach(ele=>{
@@ -18,7 +18,7 @@ export class GPUBufferSet{
             this.buffers.push({byteSize: elementWidths[i], buffer: buffers[i]})
         }
         this.bufferSize = size;
-        this.holes = [];
+        this.holes = new Map<number, number[]>();
         this.head = 0;
     }
     static create(elementWidths: number[]){
@@ -42,60 +42,65 @@ export class GPUBufferSet{
     static createFromBuffers(elementWidths: number[], buffers: WebGLBuffer[], size: number){//size in indices
         return new GPUBufferSet(elementWidths, buffers, size);
     }
-    remove(location: GPUMemory){
+    remove(location: GPUMemoryObject){
         this.clearMemory(location);
-        if(this.head == location.width + location.offset){
-            this.head -= location.width;
+        if(this.head == location.GPUWidth + location.GPUOffset){
+            this.head -= location.GPUWidth;
         } else {
-            this.holes.push(location.copyLocation());
+            let holeArray = this.holes.get(location.GPUWidth);
+            if(holeArray){
+                holeArray.push(location.GPUWidth);
+            } else {
+                this.holes.set(location.GPUWidth, [location.GPUWidth]);
+            }
         }
+        location.GPUOffset = -1;
     }
-    removeArray(locations: GPUMemory[]){
+    removeArray(locations: GPUMemoryObject[]){
         locations.forEach(location=>this.remove(location));
     }
-    add(location: GPUMemory){
-        if(location.offset!=-1){
+    add(location: GPUMemoryObject){
+        if(location.GPUOffset!=-1){
             throw("location alredy added")
         }
-        let swapLocation = this.holes.find((ele)=>ele.width == location.width);//TODO make constant time
-        if(swapLocation){
-            this.replace(swapLocation, location);
-            this.holes.splice(this.holes.indexOf(swapLocation), 1);
+        let swapLocation = this.holes.get(location.GPUWidth);
+        if(swapLocation && swapLocation.length){
+            this.fillHole(swapLocation.pop(), location);
         } else {
-            location.offset = this.head;
-            this.head += location.width;
+            location.GPUOffset = this.head;
+            this.head += location.GPUWidth;
             this.putMemory(location);
         }
     }
-    addArray(locations: GPUMemory[]){
-        let unifiedWidth = locations.reduce((accumulator, location)=>accumulator+location.width, 0);
-        let swapLocation = this.holes.find((ele)=>ele.width == unifiedWidth);//will probably fail
+    addArray(locations: GPUMemoryObject[]){
+        let unifiedWidth = locations.reduce((accumulator, location)=>accumulator+location.GPUWidth, 0);
         let insertHead: number;
-        if(swapLocation){
-            insertHead = swapLocation.offset
-            this.holes.splice(this.holes.indexOf(swapLocation), 1);
+
+        let swapLocation = this.holes.get(unifiedWidth);
+        if(swapLocation && swapLocation.length){
+            insertHead = swapLocation.pop();
         } else {
             insertHead = this.head;
             this.head += unifiedWidth;
         }
         let localHead = 0;
         locations.forEach(location => {
-            location.offset = localHead + insertHead;
-            localHead += location.width;
+            location.GPUOffset = localHead + insertHead;
+            localHead += location.GPUWidth;
         })
         let unifiedArrays: (Float32Array | Int32Array)[] = [];
-        for(let i = 0; i < locations[0].data.length; i++){
+        for(let i = 0; i < locations[0].GPUData.length; i++){
             let attribArray: Float32Array | Int32Array;
-            if(locations[0].data[i] instanceof Float32Array){
+            if(locations[0].GPUData[i] instanceof Float32Array){
                 attribArray = new Float32Array(unifiedWidth * this.buffers[i].byteSize/4);
             }
-            if(locations[0].data[i] instanceof Int32Array){
+            if(locations[0].GPUData[i] instanceof Int32Array){
                 attribArray = new Int32Array(unifiedWidth * this.buffers[i].byteSize/4);
             }
             let offset = 0;
             locations.forEach(location=>{
-                attribArray.set(location.data[i],offset);
-                offset += location.data[i].length;
+                attribArray.set(location.GPUData[i],offset);
+                offset += location.GPUData[i].length;
             })
             unifiedArrays.push(attribArray);
         }
@@ -116,15 +121,15 @@ export class GPUBufferSet{
         });
         this.bufferSize = size;
     }
-    private clearMemory(location: GPUMemory){
+    private clearMemory(location: GPUMemoryObject){
         this.buffers.forEach(buffer=>{
-            let clearMemory = new Float32Array(location.width * buffer.byteSize/4);
+            let clearMemory = new Float32Array(location.GPUWidth * buffer.byteSize/4);
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
-            gl.bufferSubData(gl.ARRAY_BUFFER, buffer.byteSize * location.offset, clearMemory)
+            gl.bufferSubData(gl.ARRAY_BUFFER, buffer.byteSize * location.GPUOffset, clearMemory)
         })
     }
-    private putMemory(memory: GPUMemory){
-        this.putMemoryChunck(memory.offset, memory.width, memory.data);
+    private putMemory(memory: GPUMemoryObject){
+        this.putMemoryChunck(memory.GPUOffset, memory.GPUWidth, memory.GPUData);
     }
     private putMemoryChunck(offset: number, width: number, data: (Float32Array | Int32Array)[]){
         while(offset + width > this.bufferSize){
@@ -135,45 +140,37 @@ export class GPUBufferSet{
             gl.bufferSubData(gl.ARRAY_BUFFER, this.buffers[i].byteSize * offset, data[i]);
         }
     }
-    private replace(old: GPUMemory, replace: GPUMemory){
-        if(old.width != replace.width){
-            throw("incompatable widths")
-        }
-        replace.offset = old.offset;
-        old.offset = -1;
+    private fillHole(hole: number, replace: GPUMemoryObject){
+        replace.GPUOffset = hole;
         this.putMemory(replace);
     }
-    private swap(m1: GPUMemory, m2: GPUMemory){
-        if(m1.width != m2.width){
+    private swap(m1: GPUMemoryObject, m2: GPUMemoryObject){
+        if(m1.GPUWidth != m2.GPUWidth){
             throw("incompatable widths")
         }
-        let otherOffset = m2.offset;
-        m2.offset = m1.offset;
-        m1.offset = otherOffset;
+        let otherOffset = m2.GPUOffset;
+        m2.GPUOffset = m1.GPUOffset;
+        m1.GPUOffset = otherOffset;
         this.putMemory(m1);
         this.putMemory(m2);
     }
 }
 
-export class GPUMemory{
-    offset: number = -1;
-    width: number;
-    data: Float32Array[] | Int32Array[];
+export class GPUMemoryTest implements GPUMemoryObject{
+    GPUOffset: number;
+    GPUWidth: number;
+    GPUData: Float32Array[] | Int32Array[];
     constructor(width: number, data: Float32Array[] | Int32Array[]){
-        this.width = width;
-        this.data = data;
+        this.GPUWidth = width;
+        this.GPUData = data;
     }
-    copyLocation(){
-        let retMem = new GPUMemory(this.width, [])
-        retMem.offset = this.offset;
-        return retMem;
-    }
-    split(splitWidth: number){
-        if(this.width <= splitWidth){
-            throw("splitwidth too wide")
-        }
-        return new GPUMemory(this.offset + splitWidth, []);
-    }
+}
+
+export interface GPUMemoryObject{
+    GPUOffset: number; //must be -1 on an uninnitilized object
+    GPUWidth: number;
+    GPUData: (Float32Array | Int32Array)[];
+    
 }
 
 /*
@@ -182,7 +179,10 @@ adding 80000 by array in vector mode takes ~30 ms
 adding 80000 individualy in vector mode takes 400 ms
 adding 10000 by array in vector mode takes ~4 ms
 adding 10000 individualy in vector mode takes 6-11 ms
-adding 1 takes 0.03 ms for dense array
-adding 1 takes 0.3 ms for very very hole filled array
+adding 1 takes 0.03 ms for dense array if memory is cold
+adding 1 takes 0.18 ms for very very hole filled array
+adding 1 takes 0.005 ms if memory is hot 
+adding and removing 1 takes 0.017 ms
+removing 10000 elements takes 80 ms
 resizing is very very fast
 */

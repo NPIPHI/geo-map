@@ -1,16 +1,14 @@
 import { mapRenderer } from "./renderer"
-import { outlineBuffer, polygonBuffer, polyFillLineBuffer, bufferSetTest } from "./bufferConstructor"
+import { bufferConstructor } from "./bufferConstructor"
 import { camera } from "./camera"
 import { loadMap } from "./mapLoad";
-import { GPUBufferSet, GPUMemory } from "./memory"
+import { GPUBufferSet } from "./memory"
+import { geoMap } from "./map"
 
 export var gl: WebGL2RenderingContext;
 var renderer: mapRenderer;
 var canvas: HTMLCanvasElement;
-var polyBuffer: {vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
-var liBuffer: {vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number}
-var oLineBuffer: {vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number}
-var bufferTest: GPUBufferSet;
+var map: geoMap;
 
 var cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
 var baseCam = {x: 0, y: 0}
@@ -90,42 +88,19 @@ async function init() {
     document.body.appendChild(canvas);
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
+
     let points = await loadMap();
-
-    let bufferMemory = bufferSetTest(points);
-    let last = bufferMemory.pop();
-
     let time1 = performance.now();
-    bufferTest = GPUBufferSet.create([2*4,3*4]);
-    bufferMemory.forEach(mem=>bufferTest.add(mem))
-    bufferMemory.forEach(mem=>{if (Math.random()>0.5) bufferTest.remove(mem)});
-
+    map = new geoMap(points);
     let time2 = performance.now();
-    polyBuffer = polygonBuffer(points);
-
-    let time3 = performance.now();
-    bufferTest.add(last);
-    let time4 = performance.now();
-    console.log(`memory managed took: ${time2-time1} ms`);
-    console.log(`one big buffert took: ${time3-time2} ms`);
-    console.log(`one took: ${time4-time3} ms`);
-    oLineBuffer = outlineBuffer(points);
-    liBuffer = polyFillLineBuffer(points);
+    console.log(time2-time1);
     loop();
 }
 
 function loop(){
     if(invalidated){
         renderer.clear();
-        if(drawParams.line){
-            renderer.renderLine2d(liBuffer.vertexBuffer, liBuffer.colorBuffer, liBuffer.length, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
-        }
-        if(drawParams.poly){
-            renderer.renderPolygon2dFromBuffer(bufferTest, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY))
-        }
-        if(drawParams.outline){
-            renderer.renderOutline2d(oLineBuffer.vertexBuffer, oLineBuffer.normalBuffer, oLineBuffer.styleBuffer, oLineBuffer.length, 0.001, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY));
-        }
+        renderer.renderMap(map, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY));
         invalidated = false;
     }
     requestAnimationFrame(loop);

@@ -15,7 +15,7 @@ class GPUBufferSet {
             this.buffers.push({ byteSize: elementWidths[i], buffer: buffers[i] });
         }
         this.bufferSize = size;
-        this.holes = [];
+        this.holes = new Map();
         this.head = 0;
     }
     static create(elementWidths) {
@@ -41,117 +41,125 @@ class GPUBufferSet {
     }
     remove(location) {
         this.clearMemory(location);
-        if (this.head == location.width + location.offset) {
-            this.head -= location.width;
+        if (this.head == location.GPUWidth + location.GPUOffset) {
+            this.head -= location.GPUWidth;
         }
         else {
-            this.holes.push(location.copyLocation());
-        }
-    }
-    add(location) {
-        if (location.offset == -1) {
-            throw ("location alredy added");
-        }
-        let swapLocation = this.holes.find((ele) => ele.width == location.width);
-        if (swapLocation) {
-            this.replace(swapLocation, location);
-            this.holes.splice(this.holes.indexOf(swapLocation), 1);
-        }
-        else {
-            if (this.bufferSize - this.head > location.width) {
-                location.offset = this.head;
-                this.head += location.width;
-                this.putMemory(location);
+            let holeArray = this.holes.get(location.GPUWidth);
+            if (holeArray) {
+                holeArray.push(location.GPUWidth);
             }
             else {
-                throw ("ran out of buffer");
+                this.holes.set(location.GPUWidth, [location.GPUWidth]);
             }
+        }
+        location.GPUOffset = -1;
+    }
+    removeArray(locations) {
+        locations.forEach(location => this.remove(location));
+    }
+    add(location) {
+        if (location.GPUOffset != -1) {
+            throw ("location alredy added");
+        }
+        let swapLocation = this.holes.get(location.GPUWidth);
+        if (swapLocation && swapLocation.length) {
+            this.fillHole(swapLocation.pop(), location);
+        }
+        else {
+            location.GPUOffset = this.head;
+            this.head += location.GPUWidth;
+            this.putMemory(location);
         }
     }
     addArray(locations) {
-        let unifiedWidth = locations.reduce((accumulator, location) => accumulator + location.width, 0);
-        let swapLocation = this.holes.find((ele) => ele.width == unifiedWidth);
-        let insertLocation;
-        if (swapLocation) {
-            insertLocation = swapLocation.offset;
-            this.holes.splice(this.holes.indexOf(swapLocation), 1);
-        }
-        else if (this.bufferSize - this.head > unifiedWidth) {
-            insertLocation = this.head;
-            this.head += unifiedWidth;
+        let unifiedWidth = locations.reduce((accumulator, location) => accumulator + location.GPUWidth, 0);
+        let insertHead;
+        let swapLocation = this.holes.get(unifiedWidth);
+        if (swapLocation && swapLocation.length) {
+            insertHead = swapLocation.pop();
         }
         else {
-            throw ("ran out of buffer");
+            insertHead = this.head;
+            this.head += unifiedWidth;
         }
+        let localHead = 0;
+        locations.forEach(location => {
+            location.GPUOffset = localHead + insertHead;
+            localHead += location.GPUWidth;
+        });
         let unifiedArrays = [];
-        for (let i = 0; i < locations[0].data.length; i++) {
+        for (let i = 0; i < locations[0].GPUData.length; i++) {
             let attribArray;
-            if (locations[0].data[i] instanceof Float32Array) {
+            if (locations[0].GPUData[i] instanceof Float32Array) {
                 attribArray = new Float32Array(unifiedWidth * this.buffers[i].byteSize / 4);
             }
-            if (locations[0].data[i] instanceof Int32Array) {
+            if (locations[0].GPUData[i] instanceof Int32Array) {
                 attribArray = new Int32Array(unifiedWidth * this.buffers[i].byteSize / 4);
             }
             let offset = 0;
             locations.forEach(location => {
-                attribArray.set(location.data[i], offset);
-                offset += location.data[i].length;
+                attribArray.set(location.GPUData[i], offset);
+                offset += location.GPUData[i].length;
             });
+            unifiedArrays.push(attribArray);
         }
-        this.putMemoryChunck(this.head, unifiedArrays);
+        this.putMemoryChunck(insertHead, unifiedWidth, unifiedArrays);
+    }
+    reallocateBuffers(minSize) {
+        this.resizeBuffers(Math.max(Math.floor(this.bufferSize * growthRatio), minSize));
+    }
+    resizeBuffers(size) {
+        this.buffers.forEach(buffer => {
+            let newBuffer = main_1.gl.createBuffer();
+            main_1.gl.bindBuffer(main_1.gl.COPY_WRITE_BUFFER, newBuffer);
+            main_1.gl.bufferData(main_1.gl.COPY_WRITE_BUFFER, size * buffer.byteSize, main_1.gl.STATIC_COPY);
+            main_1.gl.bindBuffer(main_1.gl.COPY_READ_BUFFER, buffer.buffer);
+            main_1.gl.copyBufferSubData(main_1.gl.COPY_READ_BUFFER, main_1.gl.COPY_WRITE_BUFFER, 0, 0, this.bufferSize * buffer.byteSize);
+            main_1.gl.deleteBuffer(buffer.buffer);
+            buffer.buffer = newBuffer;
+        });
+        this.bufferSize = size;
     }
     clearMemory(location) {
         this.buffers.forEach(buffer => {
-            let clearMemory = new Float32Array(location.width * buffer.byteSize / 4);
+            let clearMemory = new Float32Array(location.GPUWidth * buffer.byteSize / 4);
             main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buffer.buffer);
-            main_1.gl.bufferSubData(main_1.gl.ARRAY_BUFFER, buffer.byteSize * location.offset, clearMemory);
+            main_1.gl.bufferSubData(main_1.gl.ARRAY_BUFFER, buffer.byteSize * location.GPUOffset, clearMemory);
         });
     }
     putMemory(memory) {
-        this.putMemoryChunck(memory.offset, memory.data);
+        this.putMemoryChunck(memory.GPUOffset, memory.GPUWidth, memory.GPUData);
     }
-    putMemoryChunck(offset, data) {
+    putMemoryChunck(offset, width, data) {
+        while (offset + width > this.bufferSize) {
+            this.reallocateBuffers(offset + width - this.bufferSize);
+        }
         for (let i = 0; i < this.buffers.length; i++) {
             main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, this.buffers[i].buffer);
             main_1.gl.bufferSubData(main_1.gl.ARRAY_BUFFER, this.buffers[i].byteSize * offset, data[i]);
         }
     }
-    replace(old, replace) {
-        if (old.width != replace.width) {
-            throw ("incompatable widths");
-        }
-        replace.offset = old.offset;
-        old.offset = -1;
+    fillHole(hole, replace) {
+        replace.GPUOffset = hole;
         this.putMemory(replace);
     }
     swap(m1, m2) {
-        if (m1.width != m2.width) {
+        if (m1.GPUWidth != m2.GPUWidth) {
             throw ("incompatable widths");
         }
-        let otherOffset = m2.offset;
-        m2.offset = m1.offset;
-        m1.offset = otherOffset;
+        let otherOffset = m2.GPUOffset;
+        m2.GPUOffset = m1.GPUOffset;
+        m1.GPUOffset = otherOffset;
         this.putMemory(m1);
         this.putMemory(m2);
     }
 }
 exports.GPUBufferSet = GPUBufferSet;
-class GPUMemory {
+class GPUMemoryTest {
     constructor(width, data) {
-        this.offset = -1;
-        this.width = width;
-        this.data = data;
-    }
-    copyLocation() {
-        let retMem = new GPUMemory(this.width, []);
-        retMem.offset = this.offset;
-        return retMem;
-    }
-    split(splitWidth) {
-        if (this.width <= splitWidth) {
-            throw ("splitwidth too wide");
-        }
-        return new GPUMemory(this.offset + splitWidth, []);
+        this.GPUWidth = width;
+        this.GPUData = data;
     }
 }
-exports.GPUMemory = GPUMemory;
+exports.GPUMemoryTest = GPUMemoryTest;

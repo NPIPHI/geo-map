@@ -1,7 +1,7 @@
 export declare class GPUBufferSet {
     bufferSize: number;
     head: number;
-    holes: GPUMemory[];
+    holes: Map<number, number[]>;
     buffers: {
         byteSize: number;
         buffer: WebGLBuffer;
@@ -10,23 +10,26 @@ export declare class GPUBufferSet {
     static create(elementWidths: number[]): GPUBufferSet;
     static createFromSize(elementWidths: number[], size: number): GPUBufferSet;
     static createFromBuffers(elementWidths: number[], buffers: WebGLBuffer[], size: number): GPUBufferSet;
-    remove(location: GPUMemory): void;
-    removeArray(locations: GPUMemory[]): void;
-    add(location: GPUMemory): void;
-    addArray(locations: GPUMemory[]): void;
+    remove(location: GPUMemoryObject): void;
+    removeArray(locations: GPUMemoryObject[]): void;
+    add(location: GPUMemoryObject): void;
+    addArray(locations: GPUMemoryObject[]): void;
     private reallocateBuffers;
     private resizeBuffers;
     private clearMemory;
     private putMemory;
     private putMemoryChunck;
-    private replace;
+    private fillHole;
     private swap;
 }
-export declare class GPUMemory {
-    offset: number;
-    width: number;
-    data: Float32Array[] | Int32Array[];
+export declare class GPUMemoryTest implements GPUMemoryObject {
+    GPUOffset: number;
+    GPUWidth: number;
+    GPUData: Float32Array[] | Int32Array[];
     constructor(width: number, data: Float32Array[] | Int32Array[]);
-    copyLocation(): GPUMemory;
-    split(splitWidth: number): GPUMemory;
+}
+export interface GPUMemoryObject {
+    GPUOffset: number;
+    GPUWidth: number;
+    GPUData: (Float32Array | Int32Array)[];
 }

@@ -7,22 +7,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const gl_matrix_1 = require("gl-matrix");
 const shaders = __importStar(require("./shaders.json"));
-class PolyShaderProgram {
-    constructor(program, vertexPosition, vertexColor, viewMatrix) {
-        this.program = program;
-        this.attribLocations = { vertexPosition: vertexPosition, vertexColor: vertexColor };
-        this.uniformLocations = { viewMatrix: viewMatrix };
-    }
-}
-class OutlineShaderProgram {
-    constructor(program, vertexPosition, vertexNormal, vertexColor, viewMatrix, lineThickness) {
-        this.program = program;
-        this.attribLocations = { vertexPosition: vertexPosition, vertexNormal: vertexNormal, vertexColor: vertexColor };
-        this.uniformLocations = { viewMatrix: viewMatrix, lineThickness: lineThickness };
-    }
-}
 class ShaderProgram {
     constructor(program, attributeLocations, uniformLocations) {
         this.program = program;
@@ -41,7 +26,12 @@ class mapRenderer {
         this.polyProgam = this.initShaderProgram(shaders.polygon);
         this.outlineProgram = this.initShaderProgram(shaders.outline);
     }
-    renderLine2d(vertexBuffer, colorBuffer, length, viewMatrix = gl_matrix_1.mat3.create()) {
+    renderMap(map, viewMatrix) {
+        this.renderLine2dFromBuffer(map.lines, viewMatrix);
+        this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
+        this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
+    }
+    renderLine2d(vertexBuffer, colorBuffer, length, viewMatrix) {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
@@ -52,7 +42,10 @@ class mapRenderer {
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(this.gl.LINES, 0, length);
     }
-    renderPolygon2d(vertexBuffer, colorBuffer, length, viewMatrix = gl_matrix_1.mat3.create(), drawMode = this.gl.TRIANGLES) {
+    renderLine2dFromBuffer(bufferset, viewMatrix) {
+        this.renderLine2d(bufferset.buffers[0].buffer, bufferset.buffers[1].buffer, bufferset.head, viewMatrix);
+    }
+    renderPolygon2d(vertexBuffer, colorBuffer, length, viewMatrix, drawMode = this.gl.TRIANGLES) {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
@@ -64,17 +57,9 @@ class mapRenderer {
         this.gl.drawArrays(drawMode, 0, length);
     }
     renderPolygon2dFromBuffer(bufferSet, viewMatrix) {
-        this.gl.useProgram(this.polyProgam.program);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[0].buffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
-        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexPosition"), 2, this.gl.FLOAT, false, 0, 0);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[1].buffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
-        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexColor"), 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, bufferSet.head);
+        this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, viewMatrix);
     }
-    renderOutline2d(vertexBuffer, normalBuffer, styleBuffer, length, lineThickness, viewMatrix = gl_matrix_1.mat3.create()) {
+    renderOutline2d(vertexBuffer, normalBuffer, styleBuffer, length, lineThickness, viewMatrix) {
         let drawMode = this.gl.TRIANGLE_STRIP;
         this.gl.useProgram(this.outlineProgram.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
@@ -90,6 +75,9 @@ class mapRenderer {
         this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE"), styledata);
         this.gl.drawArrays(drawMode, 0, length);
+    }
+    renderOutline2dFromBuffer(bufferSet, lineThickness, viewMatrix) {
+        this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, lineThickness, viewMatrix);
     }
     clear() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);

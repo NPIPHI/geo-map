@@ -12,7 +12,6 @@
   "dependencies": {
     "@types/earcut": "^2.1.0",
     "earcut": "^2.2.2",
-    "gl-matrix": "^3.3.0",
     "ts-loader": "^7.0.1"
   },
   "devDependencies": {
