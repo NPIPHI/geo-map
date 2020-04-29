@@ -2,7 +2,7 @@ import { mapRenderer } from "./renderer"
 import { outlineBuffer, polygonBuffer, polyFillLineBuffer, bufferSetTest } from "./bufferConstructor"
 import { camera } from "./camera"
 import { loadMap } from "./mapLoad";
-import { GPUBufferSet } from "./memory"
+import { GPUBufferSet, GPUMemory } from "./memory"
 
 export var gl: WebGL2RenderingContext;
 var renderer: mapRenderer;
@@ -89,12 +89,16 @@ async function init() {
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
     let points = await loadMap();
-    bufferTest = new GPUBufferSet([2*4,3*4], 10000);
+    bufferTest = GPUBufferSet.createFromSize([2*4,3*4], 1000000);
+    let time1 = performance.now();
     let bufferMemory = bufferSetTest(points);
-    bufferMemory.forEach(mem=>bufferTest.add(mem));
-
-    oLineBuffer = outlineBuffer(points);
+    bufferTest.addArray(bufferMemory);
+    let time2 = performance.now();
     polyBuffer = polygonBuffer(points);
+    let time3 = performance.now();
+    console.log(`memory managed took: ${time2-time1} ms`)
+    console.log(`one big buffert took: ${time3-time2} ms`)
+    oLineBuffer = outlineBuffer(points);
     liBuffer = polyFillLineBuffer(points);
     loop();
 }

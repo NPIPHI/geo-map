@@ -13,7 +13,6 @@ async function loadMap() {
     let buffer = await file.arrayBuffer();
     let pointArray = new Float32Array(buffer);
     let pointPaths = [];
-    let index = 0;
     mapData.shapes.forEach(shape => {
         pointPaths.push(pointArray.slice(shape[1], shape[1] + shape[2] * 2 - 2));
     });

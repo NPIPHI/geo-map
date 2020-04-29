@@ -17,10 +17,17 @@ class PolyShaderProgram {
     }
 }
 class OutlineShaderProgram {
-    constructor(program, vertexPosition, vertexNormal, vertexColor, viewMatrix) {
+    constructor(program, vertexPosition, vertexNormal, vertexColor, viewMatrix, lineThickness) {
         this.program = program;
         this.attribLocations = { vertexPosition: vertexPosition, vertexNormal: vertexNormal, vertexColor: vertexColor };
-        this.uniformLocations = { viewMatrix: viewMatrix };
+        this.uniformLocations = { viewMatrix: viewMatrix, lineThickness: lineThickness };
+    }
+}
+class ShaderProgram {
+    constructor(program, attributeLocations, uniformLocations) {
+        this.program = program;
+        this.attribLocations = attributeLocations;
+        this.uniformLocations = uniformLocations;
     }
 }
 class mapRenderer {
@@ -37,38 +44,51 @@ class mapRenderer {
     renderLine2d(vertexBuffer, colorBuffer, length, viewMatrix = gl_matrix_1.mat3.create()) {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexPosition);
-        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
+        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexPosition"), 2, this.gl.FLOAT, false, 0, 0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexColor);
-        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.vertexColor, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
+        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexColor"), 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(this.gl.LINES, 0, length);
     }
     renderPolygon2d(vertexBuffer, colorBuffer, length, viewMatrix = gl_matrix_1.mat3.create(), drawMode = this.gl.TRIANGLES) {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexPosition);
-        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
+        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexPosition"), 2, this.gl.FLOAT, false, 0, 0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.vertexColor);
-        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.vertexColor, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
+        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexColor"), 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }
-    renderOutline2d(vertexBuffer, normalBuffer, colorBuffer, length, viewMatrix = gl_matrix_1.mat3.create()) {
+    renderPolygon2dFromBuffer(bufferSet, viewMatrix) {
+        this.gl.useProgram(this.polyProgam.program);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[0].buffer);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
+        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexPosition"), 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[1].buffer);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
+        this.gl.vertexAttribPointer(this.polyProgam.attribLocations.get("vertexColor"), 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, bufferSet.head);
+    }
+    renderOutline2d(vertexBuffer, normalBuffer, styleBuffer, length, lineThickness, viewMatrix = gl_matrix_1.mat3.create()) {
         let drawMode = this.gl.TRIANGLE_STRIP;
         this.gl.useProgram(this.outlineProgram.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.vertexPosition);
-        this.gl.vertexAttribPointer(this.outlineProgram.attribLocations.vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.get("vertexPosition"));
+        this.gl.vertexAttribPointer(this.outlineProgram.attribLocations.get("vertexPosition"), 2, this.gl.FLOAT, false, 0, 0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer);
-        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.vertexNormal);
-        this.gl.vertexAttribPointer(this.outlineProgram.attribLocations.vertexNormal, 2, this.gl.FLOAT, false, 0, 0);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.vertexColor);
-        this.gl.vertexAttribPointer(this.outlineProgram.attribLocations.vertexColor, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.viewMatrix, false, viewMatrix);
+        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.get("vertexNormal"));
+        this.gl.vertexAttribPointer(this.outlineProgram.attribLocations.get("vertexNormal"), 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, styleBuffer);
+        this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.get("vertexStyle"));
+        this.gl.vertexAttribIPointer(this.outlineProgram.attribLocations.get("vertexStyle"), 1, this.gl.INT, 0, 0);
+        let styledata = new Float32Array([1, 0, 0, lineThickness / viewMatrix[0], 0, 1, 0, 3 * lineThickness / viewMatrix[0]]);
+        this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.get("VIEW"), false, viewMatrix);
+        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE"), styledata);
         this.gl.drawArrays(drawMode, 0, length);
     }
     clear() {
@@ -85,12 +105,11 @@ class mapRenderer {
             alert('Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(glShader));
             return null;
         }
-        if (shaderSource.type == "Polygon") {
-            return new PolyShaderProgram(glShader, this.gl.getAttribLocation(glShader, "worldVertexPosition"), this.gl.getAttribLocation(glShader, "vertexColor"), this.gl.getUniformLocation(glShader, "VIEW"));
-        }
-        if (shaderSource.type == "Outline") {
-            return new OutlineShaderProgram(glShader, this.gl.getAttribLocation(glShader, "worldVertexPosition"), this.gl.getAttribLocation(glShader, "vertexNormal"), this.gl.getAttribLocation(glShader, "vertexColor"), this.gl.getUniformLocation(glShader, "VIEW"));
-        }
+        let attribLocations = new Map();
+        shaderSource.attributes.forEach(attribute => attribLocations.set(attribute, this.gl.getAttribLocation(glShader, attribute)));
+        let uniformLocations = new Map();
+        shaderSource.uniforms.forEach(uniform => uniformLocations.set(uniform, this.gl.getUniformLocation(glShader, uniform)));
+        return new ShaderProgram(glShader, attribLocations, uniformLocations);
     }
     loadShader(type, source) {
         const shader = this.gl.createShader(type);

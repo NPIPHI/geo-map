@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const main_1 = require("./main");
 const earcut_1 = __importDefault(require("earcut"));
+const memory_1 = require("./memory");
 function buffer(array) {
     let buf = main_1.gl.createBuffer();
     main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buf);
@@ -45,9 +46,6 @@ function lineBuffer(pointStrips) {
 }
 exports.lineBuffer = lineBuffer;
 function polygonBuffer(pointStrips) {
-    let adjacent = (x, y, pointStrip) => {
-        return Math.abs(x - y) == 1 || Math.abs(pointStrip.length / 2 - y - x) == 1;
-    };
     let polygonIndexBuffer = [];
     let length = 0;
     pointStrips.forEach(strip => {
@@ -56,10 +54,8 @@ function polygonBuffer(pointStrips) {
         length += polygon.length;
     });
     let vertexArray = new Float32Array(length * 2);
-    let edgeArray = new Float32Array(length * 3);
     let colorArray = new Float32Array(length * 3);
     let vIndex = 0;
-    let eIndex = 0;
     let cIndex = 0;
     for (let i = 0; i < polygonIndexBuffer.length; i++) {
         let c = { r: Math.random(), g: 0.5, b: 0.5 };
@@ -79,37 +75,11 @@ function polygonBuffer(pointStrips) {
                 colorArray[cIndex + i] = c.r;
             }
             cIndex += 9;
-            for (let i = 0; i < 9; i++) {
-                edgeArray[eIndex + i] = 0;
-            }
-            if (adjacent(v1, v2, strip)) {
-                edgeArray[eIndex + 2] = 1;
-                edgeArray[eIndex + 5] = 1;
-            }
-            else {
-                edgeArray[eIndex + 8] = 1;
-            }
-            if (adjacent(v1, v3, strip)) {
-                edgeArray[eIndex + 1] = 1;
-                edgeArray[eIndex + 7] = 1;
-            }
-            else {
-                edgeArray[eIndex + 4] = 1;
-            }
-            if (adjacent(v2, v3, strip)) {
-                edgeArray[eIndex + 3] = 1;
-                edgeArray[eIndex + 6] = 1;
-            }
-            else {
-                edgeArray[eIndex + 0] = 1;
-            }
-            eIndex += 9;
         }
     }
     let vertexBuffer = buffer(vertexArray);
-    let edgeBuffer = buffer(edgeArray);
     let colorBuffer = buffer(colorArray);
-    return { vertexBuffer, edgeBuffer, colorBuffer, length };
+    return { vertexBuffer, colorBuffer, length };
 }
 exports.polygonBuffer = polygonBuffer;
 function polyFillLineBuffer(pointStrips) {
@@ -160,7 +130,7 @@ function outlineBuffer(pointStrips) {
     let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
     let vertexArray = new Float32Array(length * 2);
     let normalArray = new Float32Array(length * 2);
-    let colorArray = new Float32Array(length * 3);
+    let styleArray = new Int32Array(length);
     let vIndex = 0;
     let nIndex = 0;
     let cIndex = 0;
@@ -189,23 +159,35 @@ function outlineBuffer(pointStrips) {
             nextY = curY - nextY;
             let prevMag = Math.sqrt(prevX * prevX + prevY * prevY);
             let nextMag = Math.sqrt(nextX * nextX + nextY * nextY);
-            let normX = prevX / prevMag + nextX / nextMag;
-            let normY = prevY / prevMag + nextY / nextMag;
+            prevX /= prevMag;
+            prevY /= prevMag;
+            nextX /= nextMag;
+            nextY /= nextMag;
+            let normX = prevX + nextX;
+            let normY = prevY + nextY;
             let normMag = Math.sqrt(normX * normX + normY * normY);
-            normX /= normMag;
-            normY /= normMag;
+            if (normMag < 0.001) {
+                normX = -prevY;
+                normY = prevX;
+            }
+            else {
+                normX /= normMag;
+                normY /= normMag;
+                let normDot = Math.abs(normX * -prevY + normY * prevX);
+                normDot = Math.max(normDot, 0.5);
+                normX /= normDot;
+                normY /= normDot;
+            }
+            if (normX * -prevY + normY * prevX < 0) {
+                normX *= -1;
+                normY *= -1;
+            }
             normalArray[nIndex] = normX;
             normalArray[nIndex + 1] = normY;
             normalArray[nIndex + 2] = -normX;
             normalArray[nIndex + 3] = -normY;
             nIndex += 4;
-            colorArray[cIndex] = 1;
-            colorArray[cIndex + 1] = 1;
-            colorArray[cIndex + 2] = 1;
-            colorArray[cIndex + 3] = 1;
-            colorArray[cIndex + 4] = 1;
-            colorArray[cIndex + 5] = 1;
-            cIndex += 6;
+            cIndex += 2;
         }
         vertexArray[startVIndex] = vertexArray[startVIndex + 2];
         vertexArray[startVIndex + 1] = vertexArray[startVIndex + 3];
@@ -219,54 +201,43 @@ function outlineBuffer(pointStrips) {
         nIndex += 2;
         cIndex += 3;
     });
+    for (let i = 0; i < styleArray.length / 2; i++) {
+        styleArray[i] = 1;
+    }
     let vertexBuffer = buffer(vertexArray);
     let normalBuffer = buffer(normalArray);
-    let colorBuffer = buffer(colorArray);
-    return { vertexBuffer, normalBuffer, colorBuffer, length };
+    let styleBuffer = buffer(styleArray);
+    return { vertexBuffer, normalBuffer, styleBuffer, length };
 }
 exports.outlineBuffer = outlineBuffer;
-function quadBuffer(pointStrips) {
-    const lineWidth = 0.05;
-    let length = 0;
-    pointStrips.forEach(strip => {
-        length += strip.length * 2;
-    });
-    length *= 2;
-    let vertexArray = new Float32Array(length * 2);
-    let index = 0;
-    pointStrips.forEach(strip => {
-        index += 2;
-        for (let i = 0; i < strip.length - 1; i++) {
-            let norm = { x: strip[i].y - strip[i + 1].y, y: -strip[i].x + strip[i + 1].x };
-            let normMag = Math.sqrt(norm.x * norm.x + norm.y * norm.y);
-            norm.x *= lineWidth / normMag;
-            norm.y *= lineWidth / normMag;
-            vertexArray[index] = strip[i].x - norm.x;
-            vertexArray[index + 1] = strip[i].y - norm.y;
-            if (i == 0) {
-                vertexArray[index - 2] = vertexArray[index];
-                vertexArray[index - 1] = vertexArray[index + 1];
+function bufferSetTest(pointStrips) {
+    let polygonIndexBuffer = pointStrips.map(strip => earcut_1.default(strip));
+    let memoryLocations = [];
+    for (let i = 0; i < polygonIndexBuffer.length; i++) {
+        let c = { r: Math.random(), g: 0.5, b: 0.5 };
+        let length = polygonIndexBuffer[i].length;
+        let vArray = new Float32Array(length * 2);
+        let cArray = new Float32Array(length * 3);
+        let vIndex = 0;
+        let cIndex = 0;
+        for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
+            let v1 = polygonIndexBuffer[i][j];
+            let v2 = polygonIndexBuffer[i][j + 1];
+            let v3 = polygonIndexBuffer[i][j + 2];
+            vArray[vIndex + 0] = pointStrips[i][v1 * 2 + 0];
+            vArray[vIndex + 1] = pointStrips[i][v1 * 2 + 1];
+            vArray[vIndex + 2] = pointStrips[i][v2 * 2 + 0];
+            vArray[vIndex + 3] = pointStrips[i][v2 * 2 + 1];
+            vArray[vIndex + 4] = pointStrips[i][v3 * 2 + 0];
+            vArray[vIndex + 5] = pointStrips[i][v3 * 2 + 1];
+            vIndex += 6;
+            for (let i = 0; i < 9; i++) {
+                cArray[cIndex + i] = c.r;
             }
-            vertexArray[index + 2] = strip[i].x + norm.x;
-            vertexArray[index + 3] = strip[i].y + norm.y;
-            index += 4;
+            cIndex += 9;
         }
-        vertexArray[index] = vertexArray[index - 2];
-        vertexArray[index + 1] = vertexArray[index - 1];
-        index += 2;
-    });
-    let colorData = new Float32Array(length * 3);
-    for (let i = 0; i < colorData.length; i += 3) {
-        colorData[i] = 1;
-        colorData[i + 1] = 1;
-        colorData[i + 2] = 1;
+        memoryLocations.push(new memory_1.GPUMemory(length, [vArray, cArray]));
     }
-    let vertexBuffer = main_1.gl.createBuffer();
-    main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, vertexBuffer);
-    main_1.gl.bufferData(main_1.gl.ARRAY_BUFFER, vertexArray, main_1.gl.STATIC_DRAW);
-    let colorBuffer = main_1.gl.createBuffer();
-    main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, colorBuffer);
-    main_1.gl.bufferData(main_1.gl.ARRAY_BUFFER, colorData, main_1.gl.STATIC_DRAW);
-    return { vertexBuffer, colorBuffer, length };
+    return memoryLocations;
 }
-exports.quadBuffer = quadBuffer;
+exports.bufferSetTest = bufferSetTest;

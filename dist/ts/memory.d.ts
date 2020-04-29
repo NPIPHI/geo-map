@@ -1,23 +1,30 @@
 export declare class GPUBufferSet {
     bufferSize: number;
     head: number;
-    holes: memoryLocation[];
+    holes: GPUMemory[];
     buffers: {
         byteSize: number;
         buffer: WebGLBuffer;
     }[];
-    constructor(elementWidths: number[], bufferSize: number);
-    remove(location: memoryLocation): void;
-    add(location: memoryLocation): void;
+    private constructor();
+    static create(elementWidths: number[]): GPUBufferSet;
+    static createFromSize(elementWidths: number[], size: number): GPUBufferSet;
+    static createFromBuffers(elementWidths: number[], buffers: WebGLBuffer[], size: number): GPUBufferSet;
+    remove(location: GPUMemory): void;
+    removeArray(locations: GPUMemory[]): void;
+    add(location: GPUMemory): void;
+    addArray(locations: GPUMemory[]): void;
     private clearMemory;
     private putMemory;
+    private putMemoryChunck;
     private replace;
     private swap;
 }
-export declare class memoryLocation {
+export declare class GPUMemory {
     offset: number;
     width: number;
     data: Float32Array[] | Int32Array[];
     constructor(width: number, data: Float32Array[] | Int32Array[]);
-    split(splitWidth: number): memoryLocation;
+    copyLocation(): GPUMemory;
+    split(splitWidth: number): GPUMemory;
 }

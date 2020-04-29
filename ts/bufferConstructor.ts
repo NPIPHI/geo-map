@@ -1,6 +1,6 @@
 import { gl } from "./main"
 import earcut from "earcut"
-import {GPUBufferSet, memoryLocation} from "./memory"
+import {GPUBufferSet, GPUMemory} from "./memory"
 
 function buffer(array: ArrayBuffer) {
     let buf = gl.createBuffer();
@@ -239,9 +239,9 @@ export function outlineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebG
     return {vertexBuffer, normalBuffer, styleBuffer, length};
 }
 
-export function bufferSetTest(pointStrips: Float32Array[]): memoryLocation[] {
+export function bufferSetTest(pointStrips: Float32Array[]): GPUMemory[] {
     let polygonIndexBuffer: number[][] = pointStrips.map(strip => earcut(strip));
-    let memoryLocations: memoryLocation[] = []
+    let memoryLocations: GPUMemory[] = []
     
     for (let i = 0; i < polygonIndexBuffer.length; i++) {
         let c = { r: Math.random(), g: 0.5, b: 0.5 }
@@ -267,7 +267,7 @@ export function bufferSetTest(pointStrips: Float32Array[]): memoryLocation[] {
             }
             cIndex += 9;
         }
-        memoryLocations.push(new memoryLocation(length, [vArray, cArray]))
+        memoryLocations.push(new GPUMemory(length, [vArray, cArray]))
     }
     return memoryLocations; 
 }

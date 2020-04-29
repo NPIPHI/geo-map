@@ -124,7 +124,7 @@ export class mapRenderer {
             0,
             0);
         
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[0].buffer);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[1].buffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
         this.gl.vertexAttribPointer(
             this.polyProgam.attribLocations.get("vertexColor"),

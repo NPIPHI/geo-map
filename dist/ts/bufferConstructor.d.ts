@@ -1,4 +1,4 @@
-import { memoryLocation } from "./memory";
+import { GPUMemory } from "./memory";
 export declare function lineBuffer(pointStrips: Float32Array[]): {
     vertexBuffer: WebGLBuffer;
     colorBuffer: WebGLBuffer;
@@ -20,4 +20,4 @@ export declare function outlineBuffer(pointStrips: Float32Array[]): {
     styleBuffer: WebGLBuffer;
     length: number;
 };
-export declare function bufferSetTest(pointStrips: Float32Array[]): memoryLocation[];
+export declare function bufferSetTest(pointStrips: Float32Array[]): GPUMemory[];
