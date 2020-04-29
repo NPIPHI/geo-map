@@ -1,3 +1,4 @@
+import { memoryLocation } from "./memory";
 export declare function lineBuffer(pointStrips: Float32Array[]): {
     vertexBuffer: WebGLBuffer;
     colorBuffer: WebGLBuffer;
@@ -5,7 +6,6 @@ export declare function lineBuffer(pointStrips: Float32Array[]): {
 };
 export declare function polygonBuffer(pointStrips: Float32Array[]): {
     vertexBuffer: WebGLBuffer;
-    edgeBuffer: WebGLBuffer;
     colorBuffer: WebGLBuffer;
     length: number;
 };
@@ -20,3 +20,4 @@ export declare function outlineBuffer(pointStrips: Float32Array[]): {
     styleBuffer: WebGLBuffer;
     length: number;
 };
+export declare function bufferSetTest(pointStrips: Float32Array[]): memoryLocation[];

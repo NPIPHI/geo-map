@@ -1,6 +1,7 @@
 import { mat3, vec2 } from "gl-matrix"
 import * as shaders from "./shaders.json"
 import { camera } from "./camera"
+import { GPUBufferSet } from "./memory";
 
 class PolyShaderProgram {
     program: WebGLProgram
@@ -110,6 +111,31 @@ export class mapRenderer {
 
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
+    }
+    renderPolygon2dFromBuffer(bufferSet: GPUBufferSet, viewMatrix: Float32Array): void {
+        this.gl.useProgram(this.polyProgam.program);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[0].buffer);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
+        this.gl.vertexAttribPointer(
+            this.polyProgam.attribLocations.get("vertexPosition"),
+            2,
+            this.gl.FLOAT,
+            false,
+            0,
+            0);
+        
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, bufferSet.buffers[0].buffer);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
+        this.gl.vertexAttribPointer(
+            this.polyProgam.attribLocations.get("vertexColor"),
+            3,
+            this.gl.FLOAT,
+            false,
+            0,
+            0);
+
+        this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, bufferSet.head);
     }
     renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, lineThickness: number, viewMatrix = mat3.create()){
         let drawMode = this.gl.TRIANGLE_STRIP

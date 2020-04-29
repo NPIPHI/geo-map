@@ -1,5 +1,6 @@
 import { gl } from "./main"
 import earcut from "earcut"
+import {GPUBufferSet, memoryLocation} from "./memory"
 
 function buffer(array: ArrayBuffer) {
     let buf = gl.createBuffer();
@@ -46,10 +47,7 @@ export function lineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBu
     return { vertexBuffer: vertexBuffer, colorBuffer: colorBuffer, length }
 }
 
-export function polygonBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBuffer, edgeBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number } {
-    let adjacent = (x: number, y: number, pointStrip: Float32Array) => {
-        return Math.abs(x - y) == 1 || Math.abs(pointStrip.length / 2 - y - x) == 1;
-    }
+export function polygonBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number } {
     let polygonIndexBuffer: number[][] = [];
     let length = 0;
     pointStrips.forEach(strip => {
@@ -59,11 +57,9 @@ export function polygonBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebG
     })
 
     let vertexArray = new Float32Array(length * 2);
-    let edgeArray = new Float32Array(length * 3);
     let colorArray = new Float32Array(length * 3);
 
     let vIndex = 0;
-    let eIndex = 0;
     let cIndex = 0;
     for (let i = 0; i < polygonIndexBuffer.length; i++) {
         let c = { r: Math.random(), g: 0.5, b: 0.5 }
@@ -84,38 +80,14 @@ export function polygonBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebG
                 colorArray[cIndex + i] = c.r;
             }
             cIndex += 9;
-
-            for (let i = 0; i < 9; i++) {
-                edgeArray[eIndex + i] = 0;
-            }
-            if (adjacent(v1, v2, strip)) {
-                edgeArray[eIndex + 2] = 1;
-                edgeArray[eIndex + 5] = 1;
-            } else {
-                edgeArray[eIndex + 8] = 1;
-            }
-            if (adjacent(v1, v3, strip)) {
-                edgeArray[eIndex + 1] = 1;
-                edgeArray[eIndex + 7] = 1;
-            } else {
-                edgeArray[eIndex + 4] = 1;
-            }
-            if (adjacent(v2, v3, strip)) {
-                edgeArray[eIndex + 3] = 1;
-                edgeArray[eIndex + 6] = 1;
-            } else {
-                edgeArray[eIndex + 0] = 1;
-            }
-            eIndex += 9;
         }
         //won't work construct outlines out of quads instead
     }
 
     let vertexBuffer = buffer(vertexArray);
-    let edgeBuffer = buffer(edgeArray)
     let colorBuffer = buffer(colorArray);
 
-    return { vertexBuffer, edgeBuffer, colorBuffer, length }
+    return { vertexBuffer, colorBuffer, length }
 }
 
 export function polyFillLineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number } {
@@ -265,4 +237,37 @@ export function outlineBuffer(pointStrips: Float32Array[]): { vertexBuffer: WebG
     let normalBuffer = buffer(normalArray);
     let styleBuffer = buffer(styleArray);
     return {vertexBuffer, normalBuffer, styleBuffer, length};
+}
+
+export function bufferSetTest(pointStrips: Float32Array[]): memoryLocation[] {
+    let polygonIndexBuffer: number[][] = pointStrips.map(strip => earcut(strip));
+    let memoryLocations: memoryLocation[] = []
+    
+    for (let i = 0; i < polygonIndexBuffer.length; i++) {
+        let c = { r: Math.random(), g: 0.5, b: 0.5 }
+        let length = polygonIndexBuffer[i].length;
+        let vArray = new Float32Array(length * 2);
+        let cArray = new Float32Array(length * 3);
+        let vIndex = 0;
+        let cIndex = 0;
+        for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
+            let v1 = polygonIndexBuffer[i][j];
+            let v2 = polygonIndexBuffer[i][j + 1];
+            let v3 = polygonIndexBuffer[i][j + 2];
+            vArray[vIndex + 0] = pointStrips[i][v1 * 2 + 0]
+            vArray[vIndex + 1] = pointStrips[i][v1 * 2 + 1]
+            vArray[vIndex + 2] = pointStrips[i][v2 * 2 + 0]
+            vArray[vIndex + 3] = pointStrips[i][v2 * 2 + 1]
+            vArray[vIndex + 4] = pointStrips[i][v3 * 2 + 0]
+            vArray[vIndex + 5] = pointStrips[i][v3 * 2 + 1]
+            vIndex += 6;
+
+            for (let i = 0; i < 9; i++) {
+                cArray[cIndex + i] = c.r;
+            }
+            cIndex += 9;
+        }
+        memoryLocations.push(new memoryLocation(length, [vArray, cArray]))
+    }
+    return memoryLocations; 
 }

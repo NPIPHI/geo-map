@@ -9,5 +9,5 @@ export async function loadMap(): Promise<Float32Array[]> {
     mapData.shapes.forEach(shape => {
         pointPaths.push(pointArray.slice(shape[1] as number, (shape[1] as number) + (shape[2] as number) * 2 - 2))//dont include the first point twice
     });
-    return pointPaths;
+    return pointPaths.slice(0, 100);
 }
