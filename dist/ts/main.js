@@ -79,10 +79,7 @@ async function init() {
     exports.gl = canvas.getContext("webgl2");
     renderer = new renderer_1.mapRenderer(exports.gl);
     let points = await mapLoad_1.loadMap();
-    let time1 = performance.now();
     map = new map_1.geoMap(points);
-    let time2 = performance.now();
-    console.log(time2 - time1);
     loop();
 }
 function loop() {

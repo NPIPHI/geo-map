@@ -2,25 +2,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const feature_1 = require("./feature");
 const memory_1 = require("./memory");
+const bufferConstructor_1 = require("./bufferConstructor");
 class geoMap {
     constructor(pointStrips) {
         let time1 = performance.now();
-        this.features = pointStrips.map(strip => new feature_1.feature(strip));
-        this.lines = memory_1.GPUBufferSet.create([2 * 4, 3 * 4]);
-        this.outlines = memory_1.GPUBufferSet.create([2 * 4, 2 * 4, 1 * 4]);
-        this.polygons = memory_1.GPUBufferSet.create([2 * 4, 3 * 4]);
+        let outlineData = bufferConstructor_1.bufferConstructor.outlineBuffer(pointStrips);
+        this.outlines = outlineData.buffer;
         let time2 = performance.now();
-        let dlines = this.features.map(feature => feature.line);
-        let doliens = this.features.map(feature => feature.outline);
-        let dpoly = this.features.map(feature => feature.polygon);
+        let polygonData = bufferConstructor_1.bufferConstructor.polygonBuffer(pointStrips);
+        this.polygons = polygonData.buffer;
         let time3 = performance.now();
-        this.lines.addArray(dlines);
-        this.outlines.addArray(doliens);
-        this.polygons.addArray(dpoly);
-        let time4 = performance.now();
-        console.log(`create features: ${time2 - time1}`);
-        console.log(`dense arrays: ${time3 - time2}`);
-        console.log(`buffer writes: ${time4 - time3}`);
+        console.log(time2 - time1);
+        console.log(time3 - time2);
+        this.features = [];
+        for (let i = 0; i < pointStrips.length; i++) {
+            this.features.push(new feature_1.feature(new memory_1.GPUMemoryPointer(outlineData.features.offsets[i], outlineData.features.widths[i]), new memory_1.GPUMemoryPointer(polygonData.features.offsets[i], polygonData.features.widths[i])));
+        }
     }
     draw(viewMatrix) {
     }

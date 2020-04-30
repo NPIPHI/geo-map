@@ -1,9 +1,10 @@
-import { feature } from "./feature";
+import { Feature } from "./feature";
 import { GPUBufferSet } from "./memory";
 export declare class geoMap {
-    features: feature[];
+    features: Feature[];
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     constructor(pointStrips: Float32Array[]);
-    draw(viewMatrix: Float32Array): void;
+    select(x: number, y: number): Feature;
+    remove(feature: Feature | number): void;
 }

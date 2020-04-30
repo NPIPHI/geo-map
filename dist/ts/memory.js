@@ -4,7 +4,7 @@ const main_1 = require("./main");
 const growthRatio = 1.1;
 const preallocatedSize = 100;
 class GPUBufferSet {
-    constructor(elementWidths, buffers, size) {
+    constructor(elementWidths, buffers, size, head = 0) {
         elementWidths.forEach(ele => {
             if (ele % 4) {
                 console.warn("The Index Width supplied was not a multipul of 4, element widths are in bytes");
@@ -16,7 +16,7 @@ class GPUBufferSet {
         }
         this.bufferSize = size;
         this.holes = new Map();
-        this.head = 0;
+        this.head = head;
     }
     static create(elementWidths) {
         let buffers = elementWidths.map(byteSize => {
@@ -37,10 +37,10 @@ class GPUBufferSet {
         return new GPUBufferSet(elementWidths, buffers, size);
     }
     static createFromBuffers(elementWidths, buffers, size) {
-        return new GPUBufferSet(elementWidths, buffers, size);
+        return new GPUBufferSet(elementWidths, buffers, size, size);
     }
     remove(location) {
-        this.clearMemory(location);
+        this.zeroMemory(location);
         if (this.head == location.GPUWidth + location.GPUOffset) {
             this.head -= location.GPUWidth;
         }
@@ -121,7 +121,7 @@ class GPUBufferSet {
         });
         this.bufferSize = size;
     }
-    clearMemory(location) {
+    zeroMemory(location) {
         this.buffers.forEach(buffer => {
             let clearMemory = new Float32Array(location.GPUWidth * buffer.byteSize / 4);
             main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buffer.buffer);
@@ -156,10 +156,17 @@ class GPUBufferSet {
     }
 }
 exports.GPUBufferSet = GPUBufferSet;
-class GPUMemoryTest {
+class GPUMemoryPointer {
+    constructor(offset, width) {
+        this.GPUWidth = offset;
+        this.GPUWidth = width;
+    }
+}
+exports.GPUMemoryPointer = GPUMemoryPointer;
+class GPUMemoryObject {
     constructor(width, data) {
         this.GPUWidth = width;
         this.GPUData = data;
     }
 }
-exports.GPUMemoryTest = GPUMemoryTest;
+exports.GPUMemoryObject = GPUMemoryObject;

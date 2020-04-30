@@ -54,17 +54,24 @@ window.addEventListener("wheel", mouse=>{
 })
 
 window.addEventListener("pointerdown", pointer=>{
-    mouse.down = true;
-    mouse.x = pointer.offsetX;
-    mouse.y = pointer.offsetY;
-    cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2/1000 / cam.scaleX;
-    cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2/1000 / cam.scaleY;
+    if(pointer.button === 0){
+        mouse.down = true;
+        mouse.x = pointer.offsetX;
+        mouse.y = pointer.offsetY;
+        cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2/1000 / cam.scaleX;
+        cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2/1000 / cam.scaleY;
+    } else {
+        let adjustedPointer = {x: (pointer.x / canvas.width - 0.5) * 2 / cam.scaleX - cam.x, y: (-pointer.y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
+        map.remove(map.select(-adjustedPointer.x, -adjustedPointer.y));
+    }
 })
 
 window.addEventListener("pointerup", pointer=>{
-    mouse.down = false;
-    baseCam = {x: cam.x, y: cam.y}
-    window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
+    if(pointer.button === 0){
+        mouse.down = false;
+        baseCam = {x: cam.x, y: cam.y}
+        window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
+    }
 })
 
 window.addEventListener("pointermove", pointer=>{
@@ -88,11 +95,9 @@ async function init() {
     document.body.appendChild(canvas);
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
-    let time1 = performance.now();
     let points = await loadMap();
+
     map = new geoMap(points);
-    let time2 = performance.now();
-    console.log(time2-time1);
     loop();
 }
 

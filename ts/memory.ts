@@ -49,9 +49,9 @@ export class GPUBufferSet{
         } else {
             let holeArray = this.holes.get(location.GPUWidth);
             if(holeArray){
-                holeArray.push(location.GPUWidth);
+                holeArray.push(location.GPUOffset);
             } else {
-                this.holes.set(location.GPUWidth, [location.GPUWidth]);
+                this.holes.set(location.GPUWidth, [location.GPUOffset]);
             }
         }
         location.GPUOffset = -1;
@@ -165,7 +165,7 @@ export class GPUMemoryPointer{
     GPUOffset: number;
     GPUWidth: number;
     constructor(offset: number, width: number){
-        this.GPUWidth = offset;
+        this.GPUOffset = offset;
         this.GPUWidth = width;
     }
 }
