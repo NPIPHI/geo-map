@@ -33,6 +33,9 @@ export class mapLayer{
     select(x: number, y: number): Feature | undefined{
         return this.featureTree.find(x, y)[0] as Feature;
     }
+    selectRectangle(bBox: boundingBox): Feature[]{
+        return this.featureTree.findSelection(bBox) as Feature[];
+    }
     remove(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
         this.polygons.remove(removed.polygon);

@@ -104,7 +104,7 @@ export class mapRenderer {
     renderPolygon2dFromBuffer(bufferSet: GPUBufferSet, viewMatrix: Float32Array): void {
         bufferSet.lock();
         this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, viewMatrix);
-        setTimeout(()=>bufferSet.unlock(), 200);
+        setTimeout(()=>bufferSet.unlock(), 40000);
     }
     renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array){
         let drawMode = this.gl.TRIANGLE_STRIP
@@ -153,7 +153,7 @@ export class mapRenderer {
     renderOutline2dFromBuffer(bufferSet: GPUBufferSet, viewMatrix: Float32Array){
         bufferSet.lock();
         this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, viewMatrix)
-        setTimeout(()=>bufferSet.unlock(), 200);
+        setTimeout(()=>bufferSet.unlock(), 40000);
     }
     clear(): void {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);

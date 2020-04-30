@@ -84,11 +84,11 @@ export class bufferConstructor {
             //reserve space for the degenrate point
             for (let i = 0; i < strip.length + 1; i += 2) {
                 let prevX = strip[(i - 2 + strip.length) % strip.length];
-                let prevY = prevX + 1;
+                let prevY = strip[(i - 1 + strip.length) % strip.length];
                 let curX = strip[i % strip.length];
-                let curY = curX + 1;
+                let curY = strip[(i + 1) % strip.length];
                 let nextX = strip[(i + 2) % strip.length];
-                let nextY = nextX + 1;
+                let nextY = strip[(i + 3) % strip.length];
 
                 vertexArray[attribIndex * 2] = curX;
                 vertexArray[attribIndex * 2 + 1] = curY;

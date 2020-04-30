@@ -55,8 +55,10 @@ export function loadMapChuncks(dir: string): mapLayer{
 async function addMapJson(path: string, target: mapLayer): Promise<boolean>{
     return new Promise(resolve=>{
         parseMapJson(path).then(mapData=>{
+            let time1 = performance.now();
             target.addFeatures(mapData.points, mapData.ids);
             invalidate();
+            console.log(`Adding ${mapData.ids.length} features took ${performance.now()-time1} ms`)
         });
     })
 }

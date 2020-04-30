@@ -20,6 +20,7 @@ export declare class KDTree {
     constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth?: number);
     static buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth?: number): Promise<KDTree>;
     find(x: number, y: number): spatialElement[];
+    findSelection(bBox: boundingBox): spatialElement[];
     popFirst(x: number, y: number): spatialElement;
     insert(element: spatialElement): void;
 }
@@ -31,6 +32,7 @@ declare class KDNode {
     constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number, splitDirection: boolean);
     insert(element: spatialElement): void;
     find(x: number, y: number, returnList: spatialElement[]): void;
+    findSelection(bBox: boundingBox, returnList: spatialElement[]): void;
     popFirst(x: number, y: number): spatialElement | undefined;
     private inShape;
     private asPointArray;

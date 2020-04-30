@@ -6,6 +6,7 @@ import { GPUBufferSet } from "./memory"
 import { mapLayer } from "./map"
 import { inflate } from "zlib";
 import { Feature } from "./feature";
+import { boundingBox } from "./kdTree";
 
 export var gl: WebGL2RenderingContext;
 var renderer: mapRenderer;
@@ -88,14 +89,20 @@ window.addEventListener("pointermove", pointer=>{
         invalidate();
     }
     let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
-    let selection = map.select(adjustedPointer.x, adjustedPointer.y);
-    if(selection !== selectedElement){
-        map.setStyle(selection, 2);
-        map.setStyle(selectedElement, 0);
-        console.log(selection)
-        selectedElement = selection;
-        invalidate();
-    }
+    let time1 = performance.now();
+    let selection = map.selectRectangle(new boundingBox(adjustedPointer.x-0.05, adjustedPointer.y-0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
+    selection.forEach(ele=>{
+        map.setStyle(ele, 2);
+    })
+    console.log(`Selecting ${selection.length} elements took ${performance.now()-time1} miliseconds`)
+    invalidate();
+    // if(selection !== selectedElement){
+    //     map.setStyle(selection, 2);
+    //     map.setStyle(selectedElement, 0);
+    //     //console.log(selection)
+    //     selectedElement = selection;
+    //     invalidate();
+    // }
 })
 
 function init() {
@@ -123,11 +130,9 @@ function loop(){
         renderer.clear();
         renderer.renderMap(map, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.poly, drawParams.outline);
         invalidated = false;
-        console.log(performance.now())
     }
     requestAnimationFrame(loop);
 }
 
-console.log(performance.now());
 init();
 

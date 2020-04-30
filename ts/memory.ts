@@ -1,7 +1,7 @@
 import {gl} from "./main"
 
 const growthRatio = 1.1;
-const preallocatedSize = 10000000;
+const preallocatedSize = 0;
 export class GPUBufferSet{
     private bufferSize: number;
     private bufferDeleteQueue: WebGLBuffer[];
@@ -146,7 +146,7 @@ export class GPUBufferSet{
     }
     addRaw(data: (Float32Array | Int32Array)[]): GPUMemoryPointer{
         let width = 4*data[0].length/this.buffers[0].byteSize
-        this.putMemoryChunck(this.head, 4*data[0].length/this.buffers[0].byteSize, data);
+        this.putMemoryChunck(this.head, width, data);
         this.head += width;
         return new GPUMemoryPointer(this.head - width, width);
     }
@@ -204,7 +204,7 @@ export class GPUBufferSet{
     }
     private putMemoryChunck(offset: number, width: number, data: (Float32Array | Int32Array)[]){
         while(offset + width > this.bufferSize){
-            this.reallocateBuffers(offset + width - this.bufferSize);
+            this.reallocateBuffers(offset + width);
         }
         for(let i = 0; i < this.buffers.length; i++){
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[i].buffer);

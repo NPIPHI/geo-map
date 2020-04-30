@@ -61,6 +61,11 @@ export class KDTree {
         this.topNode.find(x, y, returnList);
         return returnList;
     }
+    findSelection(bBox: boundingBox): spatialElement[] {
+        let returnList: spatialElement[] = []
+        this.topNode.findSelection(bBox, returnList);
+        return returnList;
+    }
     popFirst(x: number, y: number): spatialElement {
         return this.topNode.popFirst(x, y);
     }
@@ -138,6 +143,19 @@ class KDNode {
         }
         if (this.node2 && this.node2.bBox.contains(x, y)) {
             this.node2.find(x, y, returnList)
+        }
+    }
+    findSelection(bBox: boundingBox, returnList: spatialElement[]){
+        for (let i = 0; i < this.elements.length; i++) {
+            if (this.elements[i].bBox.intesects(bBox)) {
+                returnList.push(this.elements[i]);
+            }
+        }
+        if (this.node1 && this.node1.bBox.intesects(bBox)) {
+            this.node1.findSelection(bBox, returnList)
+        }
+        if (this.node2 && this.node2.bBox.intesects(bBox)) {
+            this.node2.findSelection(bBox, returnList)
         }
     }
     popFirst(x: number, y: number): spatialElement | undefined {
