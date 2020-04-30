@@ -1,7 +1,7 @@
 import * as shaders from "./shaders.json"
 import { camera } from "./camera"
 import { GPUBufferSet } from "./memory";
-import { geoMap } from "./map";
+import { mapLayer } from "./map";
 
 class ShaderProgram {
     program: WebGLProgram;
@@ -18,6 +18,7 @@ export class mapRenderer {
     private gl: WebGL2RenderingContext;
     private polyProgam: ShaderProgram;
     private outlineProgram: ShaderProgram;
+    private styleTransitionBoundry: {min: number, max: number};
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -27,10 +28,17 @@ export class mapRenderer {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.polyProgam = this.initShaderProgram(shaders.polygon);
         this.outlineProgram = this.initShaderProgram(shaders.outline);
+        this.styleTransitionBoundry = {min: 30, max: 60}
     }
-    renderMap(map: geoMap, viewMatrix: Float32Array, poly: boolean, outline: boolean){
+    setTransitionBoundry(min: number, max: number){
+        this.styleTransitionBoundry = {min, max};
+    }
+    private getTransitionScalar(viewMatrix: Float32Array){
+        return Math.min(Math.max((viewMatrix[4]-this.styleTransitionBoundry.min)/(this.styleTransitionBoundry.max - this.styleTransitionBoundry.min),0),1);
+    }
+    renderMap(map: mapLayer, viewMatrix: Float32Array, poly: boolean, outline: boolean){
         if(poly) this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
-        if(outline) this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
+        if(outline) this.renderOutline2dFromBuffer(map.outlines, viewMatrix);
     }
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void {
         this.gl.useProgram(this.polyProgam.program);
@@ -81,16 +89,24 @@ export class mapRenderer {
             0,
             0);
 
-        let styledata = new Float32Array([0.2, 0.2, 0.2, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
-        
-        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE"), styledata);
+        let styledata1 = new Float32Array([0.2, 0.2, 0.2, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
+        let styledata2 = new Float32Array([0.6, 0.6, 0.6, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
+        let styleScalar = this.getTransitionScalar(viewMatrix);
+
+        this.gl.uniform1f(this.polyProgam.uniformLocations.get("STYLESCALAR"), styleScalar);
+        this.gl.uniform1f(this.polyProgam.uniformLocations.get("ZOOMLEVEL"), viewMatrix[0]);
+        this.gl.uniform1f(this.polyProgam.uniformLocations.get("RENDERHEIGHT"), this.gl.canvas.height);
+        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE1"), styledata1);
+        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE2"), styledata2);
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }
     renderPolygon2dFromBuffer(bufferSet: GPUBufferSet, viewMatrix: Float32Array): void {
+        bufferSet.lock();
         this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, viewMatrix);
+        setTimeout(()=>bufferSet.unlock(), 200);
     }
-    renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, lineThickness: number, viewMatrix: Float32Array){
+    renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array){
         let drawMode = this.gl.TRIANGLE_STRIP
         this.gl.useProgram(this.outlineProgram.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
@@ -122,14 +138,22 @@ export class mapRenderer {
             0,
             0);
 
-        let styledata = new Float32Array([1, 0, 0, lineThickness/viewMatrix[0], 0, 1, 0, 3*lineThickness/viewMatrix[0], 0, 0, 1, 5*lineThickness/viewMatrix[0]]);
-        
+        let styledata1 = new Int32Array([1, 0, 0, 3, 0, 1, 0, 3, 0, 0, 1, 20]);
+        let styledata2 = new Int32Array([1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
+        let styleScalar = this.getTransitionScalar(viewMatrix);
+
+        this.gl.uniform1f(this.outlineProgram.uniformLocations.get("STYLESCALAR"), styleScalar);
+        this.gl.uniform1f(this.outlineProgram.uniformLocations.get("ZOOMLEVEL"), viewMatrix[0])
+        this.gl.uniform1f(this.outlineProgram.uniformLocations.get("RENDERHEIGHT"), this.gl.canvas.height);
+        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE1"), styledata1);
+        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE2"), styledata2);
         this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.get("VIEW"), false, viewMatrix);
-        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE"), styledata);
         this.gl.drawArrays(drawMode, 0, length);
     }
-    renderOutline2dFromBuffer(bufferSet: GPUBufferSet, lineThickness: number, viewMatrix: Float32Array){
-        this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, lineThickness, viewMatrix)
+    renderOutline2dFromBuffer(bufferSet: GPUBufferSet, viewMatrix: Float32Array){
+        bufferSet.lock();
+        this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, viewMatrix)
+        setTimeout(()=>bufferSet.unlock(), 200);
     }
     clear(): void {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);

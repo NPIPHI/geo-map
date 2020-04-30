@@ -1,16 +1,18 @@
 import {gl} from "./main"
 
 const growthRatio = 1.1;
-const preallocatedSize = 100;
+const preallocatedSize = 10000000;
 export class GPUBufferSet{
-    bufferSize: number;
+    private bufferSize: number;
+    private bufferDeleteQueue: WebGLBuffer[];
+    lockDepth: number = 0;
     head: number;
-    holes: Map<number, number[]>;
+    private holes: Map<number, number[]>;
     buffers: {byteSize: number, buffer: WebGLBuffer}[];
     private constructor(elementWidths: number[], buffers: WebGLBuffer[], size: number, head: number = 0){
         elementWidths.forEach(ele=>{
             if(ele%4){
-                console.warn("The Index Width supplied was not a multipul of 4, element widths are in bytes")
+                console.warn("The Index Width supplied was not a multipule of 4, element widths are in bytes")
             }
         })
         this.buffers = [];
@@ -20,6 +22,7 @@ export class GPUBufferSet{
         this.bufferSize = size;
         this.holes = new Map<number, number[]>();
         this.head = head;
+        this.bufferDeleteQueue = [];
     }
     static create(elementWidths: number[]){
         let buffers = elementWidths.map(byteSize=>{
@@ -41,6 +44,41 @@ export class GPUBufferSet{
     }
     static createFromBuffers(elementWidths: number[], buffers: WebGLBuffer[], size: number){//size in indices
         return new GPUBufferSet(elementWidths, buffers, size, size);
+    }
+    destructiveConcat(source: GPUBufferSet){//will not update the memory locations of the source objects SUS BROKE DONT USE
+        if(this.head + source.head > this.bufferSize){
+            this.reallocateBuffers(this.head + source.head);
+        }
+        for(let i = 0; i < this.buffers.length; i++){
+            gl.bindBuffer(gl.COPY_READ_BUFFER, source.buffers[i].buffer);
+            gl.bindBuffer(gl.COPY_WRITE_BUFFER, this.buffers[i].buffer);
+            gl.copyBufferSubData(gl.COPY_READ_BUFFER, gl.COPY_WRITE_BUFFER, 0, this.head, source.head * source.buffers[i].byteSize);
+            source.deleteBuffer(source.buffers[i].buffer);
+            source.buffers[i].buffer = null;
+        }
+        source.holes.forEach((offsets, width)=>{
+            let bucket = this.holes.get(width);
+            if(!bucket){
+                this.holes.set(width, []);
+                bucket = this.holes.get(width);
+            }
+            offsets.forEach(offset=>{
+                bucket.push(offset + this.head)
+            })
+        })
+        this.head += source.head;
+        source.freeGPUMemory();
+    }
+    freeGPUMemory(){
+        if(this.lockDepth===0){
+            this.bufferDeleteQueue.forEach(buffer=>{
+                gl.deleteBuffer(buffer);
+            })
+            this.bufferDeleteQueue = [];
+        } else {
+            setTimeout(()=>this.freeGPUMemory(), 100);
+            console.warn("GPU memory in use, trying again in 100ms")
+        }
     }
     remove(location: GPUMemoryObject | GPUMemoryPointer){
         this.zeroMemory(location);
@@ -106,12 +144,30 @@ export class GPUBufferSet{
         }
         this.putMemoryChunck(insertHead, unifiedWidth, unifiedArrays);
     }
+    addRaw(data: (Float32Array | Int32Array)[]): GPUMemoryPointer{
+        let width = 4*data[0].length/this.buffers[0].byteSize
+        this.putMemoryChunck(this.head, 4*data[0].length/this.buffers[0].byteSize, data);
+        this.head += width;
+        return new GPUMemoryPointer(this.head - width, width);
+    }
     update(location: GPUMemoryObject, attribute?: number){
         if(typeof attribute === "number"){
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[attribute].buffer)
             gl.bufferSubData(gl.ARRAY_BUFFER, location.GPUOffset * this.buffers[attribute].byteSize, location.GPUData[attribute]);
         } else {
             this.putMemory(location);
+        }
+    }
+    lock(){
+        this.lockDepth++;
+    }
+    unlock(){
+        this.lockDepth--;
+        if(this.lockDepth==0){
+            this.bufferDeleteQueue.forEach(buffer=>{
+                gl.deleteBuffer(buffer);
+            })
+            this.bufferDeleteQueue = [];
         }
     }
     private reallocateBuffers(minSize: number){
@@ -124,10 +180,17 @@ export class GPUBufferSet{
             gl.bufferData(gl.COPY_WRITE_BUFFER, size * buffer.byteSize, gl.STATIC_COPY);
             gl.bindBuffer(gl.COPY_READ_BUFFER, buffer.buffer);
             gl.copyBufferSubData(gl.COPY_READ_BUFFER, gl.COPY_WRITE_BUFFER, 0, 0, this.bufferSize * buffer.byteSize);
-            gl.deleteBuffer(buffer.buffer);
+            this.deleteBuffer(buffer.buffer);
             buffer.buffer = newBuffer;
         });
         this.bufferSize = size;
+    }
+    private deleteBuffer(buffer: WebGLBuffer){
+        if(this.lockDepth){
+            this.bufferDeleteQueue.push(buffer);
+        } else {
+            gl.deleteBuffer(buffer);
+        }
     }
     private zeroMemory(location: GPUMemoryObject | GPUMemoryPointer){
         this.buffers.forEach(buffer=>{

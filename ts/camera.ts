@@ -14,4 +14,7 @@ export class camera extends Float32Array {
     static setAespectRatio(width: number, height: number){
         aespectRatio = width/height;
     }
+    static toWorldSpace(x: number, y: number, cam: {x: number, y: number, scaleX: number, scaleY: number}, canvas: HTMLCanvasElement): {x: number, y: number}{
+        return {x: (x / canvas.width - 0.5) * canvas.width / canvas.height * 2 / cam.scaleX - cam.x, y: (-y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
+    }
 }

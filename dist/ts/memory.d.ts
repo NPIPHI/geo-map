@@ -1,7 +1,9 @@
 export declare class GPUBufferSet {
-    bufferSize: number;
+    private bufferSize;
+    private bufferDeleteQueue;
+    lockDepth: number;
     head: number;
-    holes: Map<number, number[]>;
+    private holes;
     buffers: {
         byteSize: number;
         buffer: WebGLBuffer;
@@ -15,8 +17,11 @@ export declare class GPUBufferSet {
     add(location: GPUMemoryObject): void;
     addArray(locations: GPUMemoryObject[]): void;
     update(location: GPUMemoryObject, attribute?: number): void;
+    lock(): void;
+    unlock(): void;
     private reallocateBuffers;
     private resizeBuffers;
+    private deleteBuffer;
     private zeroMemory;
     private putMemory;
     private putMemoryChunck;

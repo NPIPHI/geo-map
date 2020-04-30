@@ -1,41 +1,50 @@
 import { Feature } from "./feature";
-import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
-import { bufferConstructor } from "./bufferConstructor"
+import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject} from "./memory";
+import { bufferConstructor } from "./bufferConstructor";
+import { KDTree, boundingBox } from "./kdTree"
 
-export class geoMap{
-    features: Feature[];
+export class mapLayer{
+    featureTree: KDTree;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
-    constructor(pointStrips: Float32Array[]){
-        let time1 = performance.now();
+    constructor(pointStrips: Float32Array[], ids: string[]){
         let outlineData = bufferConstructor.outlineBuffer(pointStrips);
-        this.outlines = outlineData.buffer;
-        let time2 = performance.now();
         let polygonData = bufferConstructor.polygonBuffer(pointStrips);
+        this.outlines = outlineData.buffer;
         this.polygons = polygonData.buffer;
-        let time3 = performance.now();
-        console.log(time2-time1);
-        console.log(time3-time2);
-
-        this.features = [];
+        let features: Feature[] = [];
         for(let i = 0; i < pointStrips.length; i++){
-            this.features.push(new Feature(pointStrips[i],
-                                            new GPUMemoryPointer(outlineData.features.offsets[i], outlineData.features.widths[i]),
-                                            new GPUMemoryPointer(polygonData.features.offsets[i], polygonData.features.widths[i])));
+             features.push(new Feature(pointStrips[i], ids[i],
+                                             new GPUMemoryPointer(outlineData.features.offsets[i], outlineData.features.widths[i]),
+                                             new GPUMemoryPointer(polygonData.features.offsets[i], polygonData.features.widths[i])));
         }
+         
+        this.featureTree = new KDTree([], new boundingBox(0, 0, 4, 4));
     }
-    select(x: number, y: number){
-        return this.features.findIndex(feature=>feature.boundingBox.contains(x,y));
+    addFeatures(pointStrips: Float32Array[], ids: string[]){
+        // let features: Feature[] = [];
+        // for(let i = 0; i < pointStrips.length; i++){
+        //     features.push(Feature.fromPointStrip(pointStrips[i], ids[i]));
+        // }
+        bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
+        bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
+        // features.forEach(feature=>{
+        //     //this.featureTree.insert(feature);
+        // })
     }
-    setStyle(feature: Feature | number, style: number){
-        if(feature === undefined || feature === -1){
+    select(x: number, y: number): Feature | undefined{
+        return this.featureTree.find(x, y)[0] as Feature;
+    }
+    remove(x: number, y: number): void {
+        let removed = this.featureTree.popFirst(x, y) as Feature;
+        this.polygons.remove(removed.polygon);
+        this.outlines.remove(removed.outline)
+    }
+    setStyle(feature: Feature, style: number){
+        if(feature === undefined){
             console.warn("feature was undefined");
             return
         }
-        if(typeof feature === "number"){
-            feature = this.features[feature];
-        }
-
         let styleData = new Int32Array(feature.outline.GPUWidth);
         for(let i = 0; i < styleData.length; i++){
             styleData[i] = style;
@@ -58,20 +67,5 @@ export class geoMap{
             feature.polygon.GPUData[1] = styleData;
         }
         this.polygons.update(feature.polygon, 1);
-    }
-    remove(feature: Feature | number){
-        if(feature === undefined){
-            console.warn("feature was undefined");
-            return
-        }
-        if(typeof feature === "number"){
-            let removed = this.features.splice(feature, 1)[0];
-            this.outlines.remove(removed.outline);
-            this.polygons.remove(removed.polygon);
-        } else {
-            this.features.splice(this.features.indexOf(feature),1);
-            this.outlines.remove(feature.outline);
-            this.polygons.remove(feature.polygon);
-        }
     }
 }

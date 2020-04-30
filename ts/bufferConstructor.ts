@@ -53,51 +53,18 @@ export class bufferConstructor {
     }
 
     static polygonBuffer(pointStrips: Float32Array[]): {buffer: GPUBufferSet, features: {offsets: Int32Array, widths: Int32Array}} {
-        let polygonIndexBuffer: number[][] = [];
-        let length = 0;
-        pointStrips.forEach(strip => {
-            let polygon = earcut(strip);
-            polygonIndexBuffer.push(polygon);
-            length += polygon.length;
-        })
-
-        let GPUMemoryOffsets = new Int32Array(length);
-        let GPUMemoryWidths = new Int32Array(length);
-        let vertexArray = new Float32Array(length * 2);
-        let styleArray = new Int32Array(length);
-
-        let featureIndex = 0;
-        let attribIndex = 0;
-        for (let i = 0; i < polygonIndexBuffer.length; i++) {
-            GPUMemoryOffsets[featureIndex] = attribIndex;
-            GPUMemoryWidths[featureIndex] = polygonIndexBuffer[i].length;
-            for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
-                let strip = pointStrips[i];
-                let v1 = polygonIndexBuffer[i][j];
-                let v2 = polygonIndexBuffer[i][j + 1];
-                let v3 = polygonIndexBuffer[i][j + 2];
-                vertexArray[attribIndex * 2 + 0] = pointStrips[i][v1 * 2 + 0]
-                vertexArray[attribIndex * 2 + 1] = pointStrips[i][v1 * 2 + 1]
-                vertexArray[attribIndex * 2 + 2] = pointStrips[i][v2 * 2 + 0]
-                vertexArray[attribIndex * 2 + 3] = pointStrips[i][v2 * 2 + 1]
-                vertexArray[attribIndex * 2 + 4] = pointStrips[i][v3 * 2 + 0]
-                vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1]
-
-                for (let i = 0; i < 9; i++) {
-                    styleArray[attribIndex + i] = 0;
-                }
-                attribIndex += 3;
-            }
-            featureIndex++;
-        }
-
-        let vertexBuffer = buffer(vertexArray);
-        let colorBuffer = buffer(styleArray);
-
-        return {buffer: GPUBufferSet.createFromBuffers([2*4, 1*4], [vertexBuffer, colorBuffer], length), features: {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths}}
+        let buffer = GPUBufferSet.create([8, 4]);
+        let features = bufferConstructor.inPlacePolygonBuffer(pointStrips, buffer);
+        return {buffer, features};
     }
 
     static outlineBuffer(pointStrips: Float32Array[]): {buffer: GPUBufferSet, features: {offsets: Int32Array, widths: Int32Array}} {
+        let buffer = GPUBufferSet.create([8, 8, 4]);
+        let features = bufferConstructor.inPlaceOutlineBuffer(pointStrips, buffer);
+        return {buffer, features};
+    }
+
+    static inPlaceOutlineBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {offsets: Int32Array, widths: Int32Array} {
         let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
         let GPUMemoryOffsets = new Int32Array(length);
         let GPUMemoryWidths = new Int32Array(length);
@@ -105,10 +72,11 @@ export class bufferConstructor {
         let normalArray = new Float32Array(length * 2);
         let styleArray = new Int32Array(length);
 
+        let memoryOffset = target.head;
         let featureIndex = 0;
         let attribIndex = 0;
         pointStrips.forEach(strip => {
-            GPUMemoryOffsets[featureIndex] = attribIndex;
+            GPUMemoryOffsets[featureIndex] = attribIndex + memoryOffset;
             GPUMemoryWidths[featureIndex] = strip.length + 4;
             let startAttribIndex = attribIndex;
             attribIndex += 1;
@@ -157,8 +125,8 @@ export class bufferConstructor {
                     normY *= -1;
                     //makes sure all normals point outward
                 }
-                normalArray[attribIndex * 2] = normX;
-                normalArray[attribIndex * 2 + 1] = normY;
+                normalArray[attribIndex * 2] = 0//normX;
+                normalArray[attribIndex * 2 + 1] = 0//normY;
                 normalArray[attribIndex * 2 + 2] = -normX;
                 normalArray[attribIndex * 2 + 3] = -normY;
 
@@ -182,13 +150,52 @@ export class bufferConstructor {
             featureIndex++;
         });
 
-        for (let i = 0; i < styleArray.length / 2; i++) {
-            styleArray[i] = 1;
+        target.addRaw([vertexArray, normalArray, styleArray]);
+        return {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths};
+    }
+
+    static inPlacePolygonBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {offsets: Int32Array, widths: Int32Array} {
+        let polygonIndexBuffer: number[][] = [];
+        let length = 0;
+        pointStrips.forEach(strip => {
+            let polygon = earcut(strip);
+            polygonIndexBuffer.push(polygon);
+            length += polygon.length;
+        })
+
+        let GPUMemoryOffsets = new Int32Array(length);
+        let GPUMemoryWidths = new Int32Array(length);
+        let vertexArray = new Float32Array(length * 2);
+        let styleArray = new Int32Array(length);
+
+        let memoryOffset = target.head;
+        let featureIndex = 0;
+        let attribIndex = 0;
+        for (let i = 0; i < polygonIndexBuffer.length; i++) {
+            GPUMemoryOffsets[featureIndex] = attribIndex + memoryOffset;
+            GPUMemoryWidths[featureIndex] = polygonIndexBuffer[i].length;
+            for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
+                let strip = pointStrips[i];
+                let v1 = polygonIndexBuffer[i][j];
+                let v2 = polygonIndexBuffer[i][j + 1];
+                let v3 = polygonIndexBuffer[i][j + 2];
+                vertexArray[attribIndex * 2 + 0] = pointStrips[i][v1 * 2 + 0]
+                vertexArray[attribIndex * 2 + 1] = pointStrips[i][v1 * 2 + 1]
+                vertexArray[attribIndex * 2 + 2] = pointStrips[i][v2 * 2 + 0]
+                vertexArray[attribIndex * 2 + 3] = pointStrips[i][v2 * 2 + 1]
+                vertexArray[attribIndex * 2 + 4] = pointStrips[i][v3 * 2 + 0]
+                vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1]
+
+                for (let i = 0; i < 9; i++) {
+                    styleArray[attribIndex + i] = 0;
+                }
+                attribIndex += 3;
+            }
+            featureIndex++;
         }
-        let vertexBuffer = buffer(vertexArray);
-        let normalBuffer = buffer(normalArray);
-        let styleBuffer = buffer(styleArray);
-        return {buffer: GPUBufferSet.createFromBuffers([2*4, 2*4, 1*4], [vertexBuffer, normalBuffer, styleBuffer], length), features: {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths}};
+
+        target.addRaw([vertexArray, styleArray]);
+        return {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths}
     }
 }
 
@@ -223,17 +230,16 @@ export class featureConstructor {
 
     static polygonBuffer(strip: Float32Array): GPUMemoryObject {
         let polygonIndexBuffer: number[] = earcut(strip);
-        let length = earcut.length;
+        let length = polygonIndexBuffer.length;
         let vertexArray = new Float32Array(length * 2);
         let styleArray = new Float32Array(length);
 
         let vIndex = 0;
         let cIndex = 0;
-        let c = { r: Math.random(), g: 0.5, b: 0.5 }
-        for (let j = 0; j < polygonIndexBuffer.length; j += 3) {
-            let v1 = polygonIndexBuffer[j];
-            let v2 = polygonIndexBuffer[j + 1];
-            let v3 = polygonIndexBuffer[j + 2];
+        for (let i = 0; i < polygonIndexBuffer.length; i += 3) {
+            let v1 = polygonIndexBuffer[i];
+            let v2 = polygonIndexBuffer[i + 1];
+            let v3 = polygonIndexBuffer[i + 2];
             vertexArray[vIndex + 0] = strip[v1 * 2 + 0]
             vertexArray[vIndex + 1] = strip[v1 * 2 + 1]
             vertexArray[vIndex + 2] = strip[v2 * 2 + 0]

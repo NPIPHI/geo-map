@@ -1,25 +1,28 @@
 import { mapRenderer } from "./renderer"
 import { bufferConstructor } from "./bufferConstructor"
 import { camera } from "./camera"
-import { loadMap } from "./mapLoad";
+import { loadMap, parseMapJson, loadMapChuncks } from "./mapLoad";
 import { GPUBufferSet } from "./memory"
-import { geoMap } from "./map"
+import { mapLayer } from "./map"
+import { inflate } from "zlib";
+import { Feature } from "./feature";
 
 export var gl: WebGL2RenderingContext;
 var renderer: mapRenderer;
 var canvas: HTMLCanvasElement;
-var map: geoMap;
+var map: mapLayer;
+var selectedElement: Feature;
 
 var cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
 var baseCam = {x: 0, y: 0}
 var mouse = {x: 0, y: 0, down: false}
-var invalidated = true;
+var invalidated = false;
 var drawParams = {
     outline: true,
     poly: true
 }
 
-{
+
 window.addEventListener("keydown", key=>{
     if(key.key == "r"){
         cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
@@ -31,21 +34,22 @@ window.addEventListener("keydown", key=>{
     if(key.key == "o"){
         drawParams.outline = !drawParams.outline;
     }
-    invalidated = true;
+        invalidate();
 })
 
 window.addEventListener("resize", evt=>{
     camera.setAespectRatio(window.innerWidth, window.innerHeight);
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    invalidated = true;
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    invalidate();
 });
 
 window.addEventListener("wheel", mouse=>{
     let zoom = Math.pow(1.01, -mouse.deltaY)
     cam.scaleX *= zoom;
     cam.scaleY *= zoom;
-    invalidated = true;
+    invalidate();
     window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
 })
 
@@ -57,17 +61,13 @@ window.addEventListener("pointerdown", pointer=>{
         cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2/1000 / cam.scaleX;
         cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2/1000 / cam.scaleY;
     } else if(pointer.button === 1){
-        let adjustedPointer = {x: (pointer.x / canvas.width - 0.5) * canvas.width / canvas.height * 2 / cam.scaleX - cam.x, y: (-pointer.y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
-        let time1 = performance.now();
+        let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
         map.setStyle(map.select(adjustedPointer.x, adjustedPointer.y), 2);
-        invalidated = true;
-        console.log(performance.now()-time1);
+        invalidate();
     } else {
-        let adjustedPointer = {x: (pointer.x / canvas.width - 0.5) * canvas.width / canvas.height * 2 / cam.scaleX - cam.x, y: (-pointer.y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
-        let time1 = performance.now();
-        map.remove(map.select(adjustedPointer.x, adjustedPointer.y));
-        invalidated = true;
-        console.log(performance.now()-time1);
+        let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
+        map.remove(adjustedPointer.x, adjustedPointer.y);
+        invalidate();
     }
 })
 
@@ -85,12 +85,20 @@ window.addEventListener("pointermove", pointer=>{
     if(mouse.down){
         cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2/1000 / cam.scaleY;
         cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2/1000 / cam.scaleX;
-        invalidated = true;
+        invalidate();
+    }
+    let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
+    let selection = map.select(adjustedPointer.x, adjustedPointer.y);
+    if(selection !== selectedElement){
+        map.setStyle(selection, 2);
+        map.setStyle(selectedElement, 0);
+        console.log(selection)
+        selectedElement = selection;
+        invalidate();
     }
 })
-}
 
-async function init() {
+function init() {
     if(window.sessionStorage.getItem("VIEW")){
         cam = JSON.parse(window.sessionStorage.getItem("VIEW"));
         baseCam = {x: cam.x, y: cam.y}
@@ -102,10 +110,12 @@ async function init() {
     document.body.appendChild(canvas);
     gl = canvas.getContext("webgl2");
     renderer = new mapRenderer(gl);
-    let points = await loadMap();
-
-    map = new geoMap(points);
+    map = loadMapChuncks("./chuncks")
     loop();
+}
+
+export function invalidate(){
+    invalidated = true;
 }
 
 function loop(){
@@ -113,8 +123,11 @@ function loop(){
         renderer.clear();
         renderer.renderMap(map, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.poly, drawParams.outline);
         invalidated = false;
+        console.log(performance.now())
     }
     requestAnimationFrame(loop);
 }
 
+console.log(performance.now());
 init();
+
