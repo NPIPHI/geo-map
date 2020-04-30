@@ -62,8 +62,14 @@ export class KDTree {
         return returnList;
     }
     popFirst(x: number, y: number): spatialElement {
-        let element = this.topNode.popFirst(x, y);
-        return element;
+        return this.topNode.popFirst(x, y);
+    }
+    insert(element: spatialElement){
+        if(this.topNode.bBox.intesects(element.bBox)){
+            this.topNode.insert(element);
+        } else {
+            throw("feature outsied of tree")
+        }
     }
 }
 
@@ -107,8 +113,8 @@ class KDNode {
         }
     }
     insert(element: spatialElement) {
-        let inNode1 = element.bBox.intesects(this.node1.bBox);
-        let inNode2 = element.bBox.intesects(this.node2.bBox);
+        let inNode1 = !!this.node1 && element.bBox.intesects(this.node1.bBox);
+        let inNode2 = !!this.node2 && element.bBox.intesects(this.node2.bBox);
         if (inNode1 && inNode2) {
             this.elements.push(element);
         } else if (inNode1) {
@@ -116,7 +122,7 @@ class KDNode {
         } else if (inNode2) {
             this.node2.insert(element);
         } else {
-            throw ("element was not in bounding box")
+            this.elements.push(element); //this leaves are undefined
         }
     }
     find(x: number, y: number, returnList: spatialElement[]) {

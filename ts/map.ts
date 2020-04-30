@@ -22,15 +22,13 @@ export class mapLayer{
         this.featureTree = new KDTree([], new boundingBox(0, 0, 4, 4));
     }
     addFeatures(pointStrips: Float32Array[], ids: string[]){
-        // let features: Feature[] = [];
-        // for(let i = 0; i < pointStrips.length; i++){
-        //     features.push(Feature.fromPointStrip(pointStrips[i], ids[i]));
-        // }
-        bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
-        bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
-        // features.forEach(feature=>{
-        //     //this.featureTree.insert(feature);
-        // })
+        let outlineMemoryPointers = bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
+        let polygonMemoryPointers = bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
+        for(let i = 0; i < outlineMemoryPointers.offsets.length; i++){
+            this.featureTree.insert(new Feature(pointStrips[i], ids[i],
+                new GPUMemoryPointer(outlineMemoryPointers.offsets[i], outlineMemoryPointers.widths[i]),
+                new GPUMemoryPointer(polygonMemoryPointers.offsets[i], polygonMemoryPointers.widths[i])))
+        }
     }
     select(x: number, y: number): Feature | undefined{
         return this.featureTree.find(x, y)[0] as Feature;

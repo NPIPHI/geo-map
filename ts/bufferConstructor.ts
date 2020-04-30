@@ -66,8 +66,8 @@ export class bufferConstructor {
 
     static inPlaceOutlineBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {offsets: Int32Array, widths: Int32Array} {
         let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
-        let GPUMemoryOffsets = new Int32Array(length);
-        let GPUMemoryWidths = new Int32Array(length);
+        let GPUMemoryOffsets = new Int32Array(pointStrips.length);
+        let GPUMemoryWidths = new Int32Array(pointStrips.length);
         let vertexArray = new Float32Array(length * 2);
         let normalArray = new Float32Array(length * 2);
         let styleArray = new Int32Array(length);
@@ -84,11 +84,11 @@ export class bufferConstructor {
             //reserve space for the degenrate point
             for (let i = 0; i < strip.length + 1; i += 2) {
                 let prevX = strip[(i - 2 + strip.length) % strip.length];
-                let prevY = strip[(i - 1 + strip.length) % strip.length];
+                let prevY = prevX + 1;
                 let curX = strip[i % strip.length];
-                let curY = strip[(i + 1) % strip.length];
+                let curY = curX + 1;
                 let nextX = strip[(i + 2) % strip.length];
-                let nextY = strip[(i + 3) % strip.length];
+                let nextY = nextX + 1;
 
                 vertexArray[attribIndex * 2] = curX;
                 vertexArray[attribIndex * 2 + 1] = curY;
@@ -163,8 +163,8 @@ export class bufferConstructor {
             length += polygon.length;
         })
 
-        let GPUMemoryOffsets = new Int32Array(length);
-        let GPUMemoryWidths = new Int32Array(length);
+        let GPUMemoryOffsets = new Int32Array(pointStrips.length);
+        let GPUMemoryWidths = new Int32Array(pointStrips.length);
         let vertexArray = new Float32Array(length * 2);
         let styleArray = new Int32Array(length);
 
@@ -175,7 +175,6 @@ export class bufferConstructor {
             GPUMemoryOffsets[featureIndex] = attribIndex + memoryOffset;
             GPUMemoryWidths[featureIndex] = polygonIndexBuffer[i].length;
             for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
-                let strip = pointStrips[i];
                 let v1 = polygonIndexBuffer[i][j];
                 let v2 = polygonIndexBuffer[i][j + 1];
                 let v3 = polygonIndexBuffer[i][j + 2];
@@ -186,9 +185,6 @@ export class bufferConstructor {
                 vertexArray[attribIndex * 2 + 4] = pointStrips[i][v3 * 2 + 0]
                 vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1]
 
-                for (let i = 0; i < 9; i++) {
-                    styleArray[attribIndex + i] = 0;
-                }
                 attribIndex += 3;
             }
             featureIndex++;
