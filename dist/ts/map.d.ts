@@ -5,6 +5,7 @@ export declare class geoMap {
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     constructor(pointStrips: Float32Array[]);
-    select(x: number, y: number): Feature;
+    select(x: number, y: number): number;
+    setStyle(feature: Feature | number, style: number): void;
     remove(feature: Feature | number): void;
 }

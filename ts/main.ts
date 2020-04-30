@@ -60,11 +60,22 @@ window.addEventListener("pointerdown", pointer=>{
         mouse.y = pointer.offsetY;
         cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2/1000 / cam.scaleX;
         cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2/1000 / cam.scaleY;
+    } else if(pointer.button === 1){
+        let adjustedPointer = {x: (pointer.x / canvas.width - 0.5) * canvas.width / canvas.height * 2 / cam.scaleX - cam.x, y: (-pointer.y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
+        let time1 = performance.now();
+        map.setStyle(map.select(adjustedPointer.x, adjustedPointer.y), 2);
+        invalidated = true;
+        console.log(performance.now()-time1);
     } else {
-        let adjustedPointer = {x: (pointer.x / canvas.width - 0.5) * 2 / cam.scaleX - cam.x, y: (-pointer.y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
-        map.remove(map.select(-adjustedPointer.x, -adjustedPointer.y));
+        let adjustedPointer = {x: (pointer.x / canvas.width - 0.5) * canvas.width / canvas.height * 2 / cam.scaleX - cam.x, y: (-pointer.y / canvas.height + 0.5) * 2 / cam.scaleY - cam.y}
+        let time1 = performance.now();
+        map.remove(map.select(adjustedPointer.x, adjustedPointer.y));
+        invalidated = true;
+        console.log(performance.now()-time1);
     }
 })
+
+window.addEventListener("contextmenu", (e)=>{e.preventDefault(); return false})
 
 window.addEventListener("pointerup", pointer=>{
     if(pointer.button === 0){
@@ -104,7 +115,7 @@ async function init() {
 function loop(){
     if(invalidated){
         renderer.clear();
-        renderer.renderMap(map, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY));
+        renderer.renderMap(map, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.poly, drawParams.outline);
         invalidated = false;
     }
     requestAnimationFrame(loop);

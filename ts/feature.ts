@@ -33,7 +33,6 @@ class boundingBox{
         }
     }
     contains(x: number, y: number): boolean{
-        return true;
-        // return x > this.x1 && x < this.x2 && y > this.y1 && y < this.y2;
+        return x > this.x1 && x < this.x2 && y > this.y1 && y < this.y2;
     }
 }

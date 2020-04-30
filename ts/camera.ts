@@ -7,7 +7,7 @@ export class camera extends Float32Array {
         let arr = new Float32Array(9);
         arr[0] = scaleX / aespectRatio;
         arr[4] = scaleY;
-        arr[6] = x * scaleX;
+        arr[6] = x * scaleX / aespectRatio;
         arr[7] = y * scaleY;
         return arr;
     }

@@ -106,6 +106,14 @@ export class GPUBufferSet{
         }
         this.putMemoryChunck(insertHead, unifiedWidth, unifiedArrays);
     }
+    update(location: GPUMemoryObject, attribute?: number){
+        if(typeof attribute === "number"){
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[attribute].buffer)
+            gl.bufferSubData(gl.ARRAY_BUFFER, location.GPUOffset * this.buffers[attribute].byteSize, location.GPUData[attribute]);
+        } else {
+            this.putMemory(location);
+        }
+    }
     private reallocateBuffers(minSize: number){
         this.resizeBuffers(Math.max(Math.floor(this.bufferSize * growthRatio), minSize));
     }
@@ -156,11 +164,6 @@ export class GPUBufferSet{
     }
 }
 
-export interface GPUMemoryPointer{
-    GPUOffset: number;
-    GPUWidth: number;
-}
-
 export class GPUMemoryPointer{
     GPUOffset: number;
     GPUWidth: number;
@@ -168,12 +171,18 @@ export class GPUMemoryPointer{
         this.GPUOffset = offset;
         this.GPUWidth = width;
     }
+    toMemoryObject(data: (Float32Array | Int32Array)[]): GPUMemoryObject{
+        let obj = new GPUMemoryObject(this.GPUWidth, data);
+        obj.GPUOffset = this.GPUOffset;
+        return obj;
+    }
 }
 
 export interface GPUMemoryObject{
     GPUOffset: number; //must be -1 on an uninnitilized object
     GPUWidth: number;
-    GPUData: (Float32Array | Int32Array)[];   
+    GPUData: (Float32Array | Int32Array)[];
+    fromPointer(pointer: GPUMemoryPointer, data: (Float32Array | Int32Array)[]): GPUMemoryObject;
 }
 
 export class GPUMemoryObject{

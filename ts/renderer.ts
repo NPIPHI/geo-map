@@ -28,9 +28,9 @@ export class mapRenderer {
         this.polyProgam = this.initShaderProgram(shaders.polygon);
         this.outlineProgram = this.initShaderProgram(shaders.outline);
     }
-    renderMap(map: geoMap, viewMatrix: Float32Array){
-        this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
-        this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
+    renderMap(map: geoMap, viewMatrix: Float32Array, poly: boolean, outline: boolean){
+        if(outline) this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
+        if(poly) this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
     }
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void {
         this.gl.useProgram(this.polyProgam.program);
@@ -113,14 +113,6 @@ export class mapRenderer {
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, styleBuffer);
         this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.get("vertexStyle"));
-        // this.gl.vertexAttribPointer(
-        //     this.outlineProgram.attribLocations.get("vertexStyle"),
-        //     1,
-        //     this.gl.INT,
-        //     false,
-        //     0,
-        //     0);
-
         this.gl.vertexAttribIPointer(
             this.outlineProgram.attribLocations.get("vertexStyle"),
             1,
@@ -128,7 +120,7 @@ export class mapRenderer {
             0,
             0);
 
-        let styledata = new Float32Array([1, 0, 0, lineThickness/viewMatrix[0], 0, 1, 0, 3*lineThickness/viewMatrix[0]]);
+        let styledata = new Float32Array([1, 0, 0, lineThickness/viewMatrix[0], 0, 1, 0, 3*lineThickness/viewMatrix[0], 0, 0, 1, 5*lineThickness/viewMatrix[0]]);
         
         this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE"), styledata);

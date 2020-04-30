@@ -5,7 +5,7 @@ export declare class mapRenderer {
     private polyProgam;
     private outlineProgram;
     constructor(gl: WebGL2RenderingContext);
-    renderMap(map: geoMap, viewMatrix: Float32Array): void;
+    renderMap(map: geoMap, viewMatrix: Float32Array, poly: boolean, outline: boolean): void;
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void;
     renderLine2dFromBuffer(bufferset: GPUBufferSet, viewMatrix: Float32Array): void;
     renderPolygon2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array, drawMode?: number): void;

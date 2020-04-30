@@ -14,6 +14,7 @@ export declare class GPUBufferSet {
     removeArray(locations: (GPUMemoryObject | GPUMemoryPointer)[]): void;
     add(location: GPUMemoryObject): void;
     addArray(locations: GPUMemoryObject[]): void;
+    update(location: GPUMemoryObject, attribute?: number): void;
     private reallocateBuffers;
     private resizeBuffers;
     private zeroMemory;
@@ -22,19 +23,17 @@ export declare class GPUBufferSet {
     private fillHole;
     private swap;
 }
-export interface GPUMemoryPointer {
-    GPUOffset: number;
-    GPUWidth: number;
-}
 export declare class GPUMemoryPointer {
     GPUOffset: number;
     GPUWidth: number;
     constructor(offset: number, width: number);
+    toMemoryObject(data: (Float32Array | Int32Array)[]): GPUMemoryObject;
 }
 export interface GPUMemoryObject {
     GPUOffset: number;
     GPUWidth: number;
     GPUData: (Float32Array | Int32Array)[];
+    fromPointer(pointer: GPUMemoryPointer, data: (Float32Array | Int32Array)[]): GPUMemoryObject;
 }
 export declare class GPUMemoryObject {
     GPUOffset: number;

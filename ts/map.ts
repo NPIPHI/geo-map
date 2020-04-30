@@ -1,5 +1,5 @@
 import { Feature } from "./feature";
-import { GPUBufferSet, GPUMemoryPointer } from "./memory";
+import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
 import { bufferConstructor } from "./bufferConstructor"
 
 export class geoMap{
@@ -25,9 +25,32 @@ export class geoMap{
         }
     }
     select(x: number, y: number){
-        return this.features.find(feature=>feature.boundingBox.contains(x,y));
+        return this.features.findIndex(feature=>feature.boundingBox.contains(x,y));
+    }
+    setStyle(feature: Feature | number, style: number){
+        if(feature === undefined || feature === -1){
+            console.warn("feature was undefined");
+            return
+        }
+        if(typeof feature === "number"){
+            feature = this.features[feature];
+        }
+        let styleData = new Int32Array(feature.outline.GPUWidth);
+        for(let i = 0; i < styleData.length; i++){
+            styleData[i] = style;
+        }
+        if(feature.outline instanceof GPUMemoryPointer){
+            feature.outline = feature.outline.toMemoryObject([new Float32Array(), new Float32Array(), styleData]);
+        } else {
+            feature.outline.GPUData[2] = styleData;
+        }
+        this.outlines.update(feature.outline, 2);
     }
     remove(feature: Feature | number){
+        if(feature === undefined){
+            console.warn("feature was undefined");
+            return
+        }
         if(typeof feature === "number"){
             let removed = this.features.splice(feature, 1)[0];
             this.outlines.remove(removed.outline);
