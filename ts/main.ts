@@ -15,8 +15,7 @@ var baseCam = {x: 0, y: 0}
 var mouse = {x: 0, y: 0, down: false}
 var invalidated = true;
 var drawParams = {
-    outline: false,
-    line: false,
+    outline: true,
     poly: true
 }
 
@@ -25,9 +24,6 @@ window.addEventListener("keydown", key=>{
     if(key.key == "r"){
         cam = {x: 0, y: 0, scaleX: 1, scaleY: 1}
         baseCam = {x: 0, y: 0}
-    }
-    if(key.key == "l"){
-        drawParams.line = !drawParams.line;
     }
     if(key.key == "p"){
         drawParams.poly = !drawParams.poly;

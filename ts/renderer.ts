@@ -29,8 +29,8 @@ export class mapRenderer {
         this.outlineProgram = this.initShaderProgram(shaders.outline);
     }
     renderMap(map: geoMap, viewMatrix: Float32Array, poly: boolean, outline: boolean){
-        if(outline) this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
         if(poly) this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
+        if(outline) this.renderOutline2dFromBuffer(map.outlines, 0.001, viewMatrix);
     }
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void {
         this.gl.useProgram(this.polyProgam.program);
@@ -60,7 +60,7 @@ export class mapRenderer {
     renderLine2dFromBuffer(bufferset: GPUBufferSet, viewMatrix: Float32Array): void {
         this.renderLine2d(bufferset.buffers[0].buffer, bufferset.buffers[1].buffer, bufferset.head, viewMatrix);
     }
-    renderPolygon2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array, drawMode = this.gl.TRIANGLES): void {
+    renderPolygon2d(vertexBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array, drawMode = this.gl.TRIANGLES): void {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
@@ -72,16 +72,18 @@ export class mapRenderer {
             0,
             0);
         
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorBuffer);
-        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexColor"));
-        this.gl.vertexAttribPointer(
-            this.polyProgam.attribLocations.get("vertexColor"),
-            3,
-            this.gl.FLOAT,
-            false,
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, styleBuffer);
+        this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexStyle"));
+        this.gl.vertexAttribIPointer(
+            this.polyProgam.attribLocations.get("vertexStyle"),
+            1,
+            this.gl.INT,
             0,
             0);
 
+        let styledata = new Float32Array([0.2, 0.2, 0.2, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
+        
+        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE"), styledata);
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }

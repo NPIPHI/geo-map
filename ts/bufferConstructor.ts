@@ -64,14 +64,13 @@ export class bufferConstructor {
         let GPUMemoryOffsets = new Int32Array(length);
         let GPUMemoryWidths = new Int32Array(length);
         let vertexArray = new Float32Array(length * 2);
-        let colorArray = new Float32Array(length * 3);
+        let styleArray = new Int32Array(length);
 
         let featureIndex = 0;
         let attribIndex = 0;
         for (let i = 0; i < polygonIndexBuffer.length; i++) {
             GPUMemoryOffsets[featureIndex] = attribIndex;
             GPUMemoryWidths[featureIndex] = polygonIndexBuffer[i].length;
-            let c = { r: Math.random(), g: 0.5, b: 0.5 }
             for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
                 let strip = pointStrips[i];
                 let v1 = polygonIndexBuffer[i][j];
@@ -85,7 +84,7 @@ export class bufferConstructor {
                 vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1]
 
                 for (let i = 0; i < 9; i++) {
-                    colorArray[attribIndex * 3 + i] = c.r;
+                    styleArray[attribIndex + i] = 0;
                 }
                 attribIndex += 3;
             }
@@ -93,9 +92,9 @@ export class bufferConstructor {
         }
 
         let vertexBuffer = buffer(vertexArray);
-        let colorBuffer = buffer(colorArray);
+        let colorBuffer = buffer(styleArray);
 
-        return {buffer: GPUBufferSet.createFromBuffers([2*4, 3*4], [vertexBuffer, colorBuffer], length), features: {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths}}
+        return {buffer: GPUBufferSet.createFromBuffers([2*4, 1*4], [vertexBuffer, colorBuffer], length), features: {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths}}
     }
 
     static outlineBuffer(pointStrips: Float32Array[]): {buffer: GPUBufferSet, features: {offsets: Int32Array, widths: Int32Array}} {
@@ -226,7 +225,7 @@ export class featureConstructor {
         let polygonIndexBuffer: number[] = earcut(strip);
         let length = earcut.length;
         let vertexArray = new Float32Array(length * 2);
-        let colorArray = new Float32Array(length * 3);
+        let styleArray = new Float32Array(length);
 
         let vIndex = 0;
         let cIndex = 0;
@@ -243,13 +242,13 @@ export class featureConstructor {
             vertexArray[vIndex + 5] = strip[v3 * 2 + 1]
             vIndex += 6;
 
-            for (let i = 0; i < 9; i++) {
-                colorArray[cIndex + i] = c.r;
+            for (let i = 0; i < 3; i++) {
+                styleArray[cIndex + i] = 0;
             }
-            cIndex += 9;
+            cIndex += 3;
         }
 
-        return new GPUMemoryObject(length, [vertexArray, colorArray]);
+        return new GPUMemoryObject(length, [vertexArray, styleArray]);
     }
 
     static outlineBuffer(strip: Float32Array): GPUMemoryObject {

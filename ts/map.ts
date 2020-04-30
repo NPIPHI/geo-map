@@ -35,6 +35,7 @@ export class geoMap{
         if(typeof feature === "number"){
             feature = this.features[feature];
         }
+
         let styleData = new Int32Array(feature.outline.GPUWidth);
         for(let i = 0; i < styleData.length; i++){
             styleData[i] = style;
@@ -45,6 +46,18 @@ export class geoMap{
             feature.outline.GPUData[2] = styleData;
         }
         this.outlines.update(feature.outline, 2);
+
+
+        styleData = new Int32Array(feature.polygon.GPUWidth);
+        for(let i = 0; i < styleData.length; i++){
+            styleData[i] = style;
+        }
+        if(feature.polygon instanceof GPUMemoryPointer){
+            feature.polygon = feature.polygon.toMemoryObject([new Float32Array(), styleData]);
+        } else {
+            feature.polygon.GPUData[1] = styleData;
+        }
+        this.polygons.update(feature.polygon, 1);
     }
     remove(feature: Feature | number){
         if(feature === undefined){
