@@ -23,7 +23,7 @@ export class mapRenderer {
         this.gl = gl;
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.depthFunc(this.gl.LEQUAL);
-        this.gl.clearColor(0.9, 0.9, 0.9, 1);
+        this.gl.clearColor(0.7, 0.7, 0.7, 1);
         this.gl.clearDepth(1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.polyProgam = this.initShaderProgram(shaders.polygon);
@@ -89,8 +89,8 @@ export class mapRenderer {
             0,
             0);
 
-        let styledata1 = new Float32Array([0.3, 0.3, 0.3, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
-        let styledata2 = new Float32Array([0.5, 0.5, 0.5, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
+        let styledata1 = new Float32Array([0.9, 0.9, 0.9, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
+        let styledata2 = new Float32Array([0.9, 0.9, 0.9, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
         let styleScalar = this.getTransitionScalar(viewMatrix);
 
         this.gl.uniform1f(this.polyProgam.uniformLocations.get("STYLESCALAR"), styleScalar);
@@ -138,8 +138,8 @@ export class mapRenderer {
             0,
             0);
 
-        let styledata1 = new Float32Array([0.8, 0.8, 0.8, 3, 0, 1, 0, 3, 0, 0, 1, 8]);
-        let styledata2 = new Float32Array([0, 0, 0.6, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
+        let styledata1 = new Float32Array([0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8]);
+        let styledata2 = new Float32Array([0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
         let styleScalar = this.getTransitionScalar(viewMatrix);
 
         this.gl.uniform1f(this.outlineProgram.uniformLocations.get("STYLESCALAR"), styleScalar);

@@ -20,6 +20,9 @@ var invalidated = false;
 var drawParams = { lines: true, polygons: true }
 var paintMode = false;
 
+let zoom = 1.0;
+let targetZoom = 1.0;
+
 function sizeCanvas() {
     canvas.width = canvas.getBoundingClientRect().width;
     canvas.height = canvas.getBoundingClientRect().height;
@@ -75,11 +78,11 @@ function manageSidebar() {
 
 function loop() {
     manageSidebar();
-    if (invalidated) {
+    zoom = zoom + (targetZoom - zoom) * 0.1;
+    cam.scaleX = zoom;
+    cam.scaleY = zoom;
         renderer.clear();
         renderer.renderMap(map, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.polygons, drawParams.lines);
-        invalidated = false;
-    }
     requestAnimationFrame(loop);
 }
 
@@ -88,9 +91,7 @@ init();
 window.addEventListener("resize", sizeCanvas);
 
 canvas.addEventListener("wheel", mouse => {
-    let zoom = Math.pow(1.01, -mouse.deltaY)
-    cam.scaleX *= zoom;
-    cam.scaleY *= zoom;
+    targetZoom *= Math.pow(1.01, -mouse.deltaY);
     invalidate();
     window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
 })
