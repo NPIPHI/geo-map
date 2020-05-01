@@ -13,8 +13,6 @@ uniform float RENDERHEIGHT;
 out vec4 fragColor;
 
 void main(){
-    vec4 style = STYLETABLE1[vertexStyle] * STYLESCALAR + STYLETABLE2[vertexStyle] * (1.f-STYLESCALAR);
-    vec3 transforedPosition = VIEW * vec3(vertexPosition.x, vertexPosition.y, 1);
-    gl_Position = vec4(transforedPosition, 1);
-    fragColor = style;
+    gl_Position = vec4(VIEW * vec3(vertexPosition.x, vertexPosition.y, 1), 1);
+    fragColor = mix(STYLETABLE2[vertexStyle], STYLETABLE1[vertexStyle], STYLESCALAR);
 }

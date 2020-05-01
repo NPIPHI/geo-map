@@ -14,9 +14,8 @@ uniform float RENDERHEIGHT;
 out vec3 fragColor;
 
 void main(){
-    vec4 style = STYLETABLE1[vertexStyle] * STYLESCALAR + STYLETABLE2[vertexStyle] * (1.f-STYLESCALAR);
+    vec4 style = mix(STYLETABLE2[vertexStyle], STYLETABLE1[vertexStyle], STYLESCALAR);
     float thickness = style.w / RENDERHEIGHT / ZOOMLEVEL;
-    vec3 transforedPosition = VIEW * vec3(vertexPosition.x + vertexNormal.x * thickness, vertexPosition.y + vertexNormal.y * thickness, 1);
-    gl_Position = vec4(transforedPosition, 1);
+    gl_Position = vec4(VIEW * vec3(vertexPosition.x + vertexNormal.x * thickness, vertexPosition.y + vertexNormal.y * thickness, 1), 1);
     fragColor = style.xyz;
 }
