@@ -37,8 +37,8 @@ export class mapRenderer {
         return Math.min(Math.max((viewMatrix[4]-this.styleTransitionBoundry.min)/(this.styleTransitionBoundry.max - this.styleTransitionBoundry.min),0),1);
     }
     renderMap(map: mapLayer, viewMatrix: Float32Array, poly: boolean, outline: boolean){
-        if(poly) this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
-        if(outline) this.renderOutline2dFromBuffer(map.outlines, viewMatrix);
+        if(poly && map.polygons.head) this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
+        if(outline && map.polygons.head) this.renderOutline2dFromBuffer(map.outlines, viewMatrix);
     }
     renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void {
         this.gl.useProgram(this.polyProgam.program);

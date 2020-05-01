@@ -136,7 +136,7 @@ canvas.addEventListener("pointermove", pointer => {
     if (paintMode) {
         let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
         let time1 = performance.now();
-        let selection = map.selectRectangle(new boundingBox(adjustedPointer.x - 0.025, adjustedPointer.y - 0.025, adjustedPointer.x + 0.025, adjustedPointer.y + 0.025));
+        let selection = map.selectRectangle(new boundingBox(adjustedPointer.x - 0.1, adjustedPointer.y - 0.1, adjustedPointer.x + 0.1, adjustedPointer.y + 0.1));
         selection.forEach(ele => {
             map.setStyle(ele, 2);
         })
