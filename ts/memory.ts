@@ -249,7 +249,7 @@ export interface GPUMemoryObject{
 }
 
 export class GPUMemoryObject{
-    GPUOffset: number; //must be -1 on an uninnitilized object
+    GPUOffset: number = -1; //must be -1 on an uninnitilized object
     GPUWidth: number;
     GPUData: (Float32Array | Int32Array)[];
     constructor(width: number, data: (Float32Array | Int32Array)[]){

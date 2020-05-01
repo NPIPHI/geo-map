@@ -47,8 +47,10 @@ export class KDHeep {
 
 export class KDTree {
     topNode: KDNode;
+    outsideElements: spatialElement[];
     constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 8) {
-        this.topNode = new KDNode(elements, bBox, recursiveDepth, true)
+        this.topNode = new KDNode(elements, bBox, recursiveDepth, true);
+        this.outsideElements = [];
     }
     static async buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 8): Promise<KDTree> {
         return new Promise((resolve, reject) => {
@@ -58,22 +60,39 @@ export class KDTree {
     }
     find(x: number, y: number): spatialElement[] {
         let returnList: spatialElement[] = []
-        this.topNode.find(x, y, returnList);
+        if(this.topNode.bBox.contains(x, y)){
+            this.topNode.find(x, y, returnList);
+        } else {
+            return this.outsideElements.filter(ele=>ele.bBox.contains(x, y))
+        }
         return returnList;
     }
     findSelection(bBox: boundingBox): spatialElement[] {
         let returnList: spatialElement[] = []
-        this.topNode.findSelection(bBox, returnList);
+        if(this.topNode.bBox.intesects(bBox)){
+            this.topNode.findSelection(bBox, returnList);
+        } else {
+            return this.outsideElements.filter(ele=>ele.bBox.intesects(bBox))
+        }
         return returnList;
     }
     popFirst(x: number, y: number): spatialElement {
-        return this.topNode.popFirst(x, y);
+        if(this.topNode.bBox.contains(x, y)){
+            return this.topNode.popFirst(x, y);
+        } else {
+            for(let i = 0; i < this.outsideElements.length; i++){
+                if(this.outsideElements[i].bBox.contains(x, y)){
+                    return this.outsideElements.splice(i, 1)[0];
+                }
+            }
+        }
+        return undefined;
     }
     insert(element: spatialElement){
         if(this.topNode.bBox.intesects(element.bBox)){
             this.topNode.insert(element);
         } else {
-            throw("feature outsied of tree")
+            this.outsideElements.push(element);
         }
     }
 }

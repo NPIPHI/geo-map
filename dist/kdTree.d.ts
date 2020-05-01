@@ -17,6 +17,7 @@ export declare class KDHeep {
 }
 export declare class KDTree {
     topNode: KDNode;
+    outsideElements: spatialElement[];
     constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth?: number);
     static buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth?: number): Promise<KDTree>;
     find(x: number, y: number): spatialElement[];
