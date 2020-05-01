@@ -48,11 +48,11 @@ export class KDHeep {
 export class KDTree {
     topNode: KDNode;
     outsideElements: spatialElement[];
-    constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 8) {
+    constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 10) {
         this.topNode = new KDNode(elements, bBox, recursiveDepth, true);
         this.outsideElements = [];
     }
-    static async buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 8): Promise<KDTree> {
+    static async buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 10): Promise<KDTree> {
         return new Promise((resolve, reject) => {
             let tree = new KDTree(elements, bBox, recursiveDepth)
             resolve(tree);
@@ -72,7 +72,7 @@ export class KDTree {
         if(this.topNode.bBox.intesects(bBox)){
             this.topNode.findSelection(bBox, returnList);
         } else {
-            return this.outsideElements.filter(ele=>ele.bBox.intesects(bBox))
+            // return this.outsideElements.filter(ele=>ele.bBox.intesects(bBox))
         }
         return returnList;
     }

@@ -175,7 +175,7 @@ canvas.addEventListener("pointermove", pointer => {
     let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
     if (paintMode) {
         let time1 = performance.now();
-        let selection = tileMap.selectRectangle(new boundingBox(adjustedPointer.x - 0.1, adjustedPointer.y - 0.1, adjustedPointer.x + 0.1, adjustedPointer.y + 0.1));
+        let selection = tileMap.selectRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
         selection.forEach(ele => {
             tileMap.setStyle(ele, 2);
         })
