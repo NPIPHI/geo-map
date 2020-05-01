@@ -17,15 +17,12 @@ var invalidated = false;
 var drawParams = { tile: true, feature: true, lines: true, polygons: true }
 var paintMode = false;
 var sprayMode = false;
-var addedFeatureIndex = 0;
+var featureInfoTracker = {addedIndex: 0, totalCount: 0, displayedCount: 0}
 
 let zoom = 2.7;
 let targetZoom = 2.7;
 
 function init() {
-    // if (window.sessionStorage.getItem("VIEW")) {
-    //     cam = JSON.parse(window.sessionStorage.getItem("VIEW"));
-    // }
     canvas = document.createElement("canvas");
     gl = canvas.getContext("webgl2");
     if(!gl){
@@ -33,6 +30,10 @@ function init() {
     }
     document.body.appendChild(canvas);
     sizeCanvas();
+    mouse.x = canvas.width/2;
+    mouse.y = canvas.height/2;
+    mouse.startx = canvas.width/2;
+    mouse.starty = canvas.height/2;
 
     renderer = new mapRenderer(gl);
     tileMap = loadMapChuncks("./chuncks");
@@ -49,7 +50,7 @@ export function invalidate() {
 }
 
 export function incrementFeatureNumberDisplay(featureNumberDelta: number) {
-    document.getElementById("TileNumber").innerHTML = (parseInt(document.getElementById("TileNumber").innerHTML) + featureNumberDelta) as any;
+    featureInfoTracker.totalCount += featureNumberDelta;
 }
 
 export function setHoveredElement(id: string) {
@@ -66,6 +67,10 @@ function sizeCanvas() {
 
 let lastState: any = {};
 function manageSidebar() {
+    if(featureInfoTracker.displayedCount != featureInfoTracker.totalCount){
+        document.getElementById("TileNumber").innerHTML = featureInfoTracker.totalCount as any;
+        featureInfoTracker.displayedCount = featureInfoTracker.totalCount;
+    }
     let state: any = {};
     let lower = (document.getElementById("lower") as HTMLInputElement).value;
     let upper = (document.getElementById("upper") as HTMLInputElement).value;
@@ -119,8 +124,11 @@ function sprayFeatures(x: number, y: number, radius: number, scale: number, coun
             featureOutline[i] = featureOutline[i] * scale + x + Math.cos(theta) * offset;
             featureOutline[i+1] = featureOutline[i+1] * scale + y + Math.sin(theta) * offset;
         }
-        tileMap.setStyle(tileMap.select(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset), 3);
-        featureMap.addFeature(featureOutline, "new feature " + addedFeatureIndex++);
+        let subTile = tileMap.select(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset)
+        if(subTile){
+            tileMap.setStyle(subTile, 3);
+        }
+        featureMap.addFeature(featureOutline, "new feature " + featureInfoTracker.addedIndex++);
     }
 }
 

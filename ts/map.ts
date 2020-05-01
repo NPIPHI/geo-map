@@ -42,7 +42,7 @@ export class mapLayer {
         this.featureTree.insert(feature);
     }
     select(x: number, y: number): Feature | undefined {
-        return this.featureTree.find(x, y)[0] as Feature;
+        return this.featureTree.findFirst(x, y) as Feature;
     }
     selectRectangle(bBox: boundingBox): Feature[] {
         return this.featureTree.findSelection(bBox) as Feature[];

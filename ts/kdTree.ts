@@ -39,7 +39,7 @@ export class boundingBox {
     }
 }
 
-export class KDHeep {
+class KDHeep {
     constructor(elements: spatialElement[], bBox: boundingBox, depth: number = 1) {
 
     }
@@ -67,12 +67,19 @@ export class KDTree {
         }
         return returnList;
     }
+    findFirst(x: number, y: number): spatialElement {
+        if(this.topNode.bBox.contains(x, y)){
+            return this.topNode.findFirst(x, y);
+        } else {
+            return this.outsideElements.find(ele=>ele.bBox.contains(x, y));
+        }
+    }
     findSelection(bBox: boundingBox): spatialElement[] {
         let returnList: spatialElement[] = []
         if(this.topNode.bBox.intesects(bBox)){
             this.topNode.findSelection(bBox, returnList);
         } else {
-            // return this.outsideElements.filter(ele=>ele.bBox.intesects(bBox))
+            return this.outsideElements.filter(ele=>ele.bBox.intesects(bBox))
         }
         return returnList;
     }
@@ -163,6 +170,25 @@ class KDNode {
         if (this.node2 && this.node2.bBox.contains(x, y)) {
             this.node2.find(x, y, returnList)
         }
+    }
+    findFirst(x: number, y: number): spatialElement{
+        for (let i = 0; i < this.elements.length; i++) {
+            if (this.elements[i].bBox.contains(x, y)) {
+                if (this.inShape(this.elements[i].shape, x, y)) {
+                    return this.elements[i];
+                }
+            }
+        }
+        let found: spatialElement;
+        if (this.node1 && this.node1.bBox.contains(x, y)) {
+            found = this.node1.findFirst(x, y)
+            if(found) return found;
+        }
+        if (this.node2 && this.node2.bBox.contains(x, y)) {
+            found = this.node2.findFirst(x, y)
+            if(found) return found;
+        }
+        return null;
     }
     findSelection(bBox: boundingBox, returnList: spatialElement[]){
         for (let i = 0; i < this.elements.length; i++) {

@@ -12,15 +12,13 @@ export declare class boundingBox {
     contains(x: number, y: number): boolean;
     intesects(bBox: boundingBox): boolean;
 }
-export declare class KDHeep {
-    constructor(elements: spatialElement[], bBox: boundingBox, depth?: number);
-}
 export declare class KDTree {
     topNode: KDNode;
     outsideElements: spatialElement[];
     constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth?: number);
     static buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth?: number): Promise<KDTree>;
     find(x: number, y: number): spatialElement[];
+    findFirst(x: number, y: number): spatialElement;
     findSelection(bBox: boundingBox): spatialElement[];
     popFirst(x: number, y: number): spatialElement;
     insert(element: spatialElement): void;
@@ -33,6 +31,7 @@ declare class KDNode {
     constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number, splitDirection: boolean);
     insert(element: spatialElement): void;
     find(x: number, y: number, returnList: spatialElement[]): void;
+    findFirst(x: number, y: number): spatialElement;
     findSelection(bBox: boundingBox, returnList: spatialElement[]): void;
     popFirst(x: number, y: number): spatialElement | undefined;
     private inShape;
