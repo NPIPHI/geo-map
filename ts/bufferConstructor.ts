@@ -125,8 +125,8 @@ export class bufferConstructor {
                     normY *= -1;
                     //makes sure all normals point outward
                 }
-                normalArray[attribIndex * 2] = 0//normX;
-                normalArray[attribIndex * 2 + 1] = 0//normY;
+                normalArray[attribIndex * 2] = normX;
+                normalArray[attribIndex * 2 + 1] = normY;
                 normalArray[attribIndex * 2 + 2] = -normX;
                 normalArray[attribIndex * 2 + 3] = -normY;
 
