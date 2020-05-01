@@ -1,8 +1,8 @@
 #version 300 es
 
-in lowp vec4 fragColor;
+in lowp vec3 fragColor;
 out lowp vec4 color;
 
 void main(){
-    color = fragColor;
+    color = vec4(fragColor, 1);
 }
