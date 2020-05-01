@@ -34,7 +34,7 @@ function init() {
         baseCam = { x: cam.x, y: cam.y }
     }
     canvas = document.createElement("canvas");
-    gl = canvas.getContext("webgl2");
+    gl = canvas.getContext("webgl");
     document.body.appendChild(canvas);
     sizeCanvas();
 
