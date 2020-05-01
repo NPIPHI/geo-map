@@ -23,7 +23,7 @@ export class mapRenderer {
         this.gl = gl;
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.depthFunc(this.gl.LEQUAL);
-        this.gl.clearColor(0, 0, 0, 1);
+        this.gl.clearColor(0.5, 0.5, 0.5, 1);
         this.gl.clearDepth(1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.polyProgam = this.initShaderProgram(shaders.polygon);
@@ -89,7 +89,7 @@ export class mapRenderer {
             0,
             0);
 
-        let styledata1 = new Float32Array([0.2, 0.2, 0.2, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
+        let styledata1 = new Float32Array([0.3, 0.3, 0.3, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
         let styledata2 = new Float32Array([0.6, 0.6, 0.6, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
         let styleScalar = this.getTransitionScalar(viewMatrix);
 
