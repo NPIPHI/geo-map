@@ -5,7 +5,6 @@ export declare class mapLayer {
     private featureTree;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
-    private featureCount;
     styleTable: {
         polygon: Float32Array[];
         outline: Float32Array[];

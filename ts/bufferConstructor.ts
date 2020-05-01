@@ -174,6 +174,13 @@ export class bufferConstructor {
         for (let i = 0; i < polygonIndexBuffer.length; i++) {
             GPUMemoryOffsets[featureIndex] = attribIndex + memoryOffset;
             GPUMemoryWidths[featureIndex] = polygonIndexBuffer[i].length;
+            let garishColor= 0;
+            if(Math.random() < 0.05){
+                garishColor = 1;
+            }
+            if(Math.random() < 0.05){
+                garishColor = 3;
+            }
             for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
                 let v1 = polygonIndexBuffer[i][j];
                 let v2 = polygonIndexBuffer[i][j + 1];
@@ -184,7 +191,9 @@ export class bufferConstructor {
                 vertexArray[attribIndex * 2 + 3] = pointStrips[i][v2 * 2 + 1]
                 vertexArray[attribIndex * 2 + 4] = pointStrips[i][v3 * 2 + 0]
                 vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1]
-
+                styleArray[attribIndex] = garishColor;
+                styleArray[attribIndex+1] = garishColor;
+                styleArray[attribIndex+2] = garishColor;
                 attribIndex += 3;
             }
             featureIndex++;

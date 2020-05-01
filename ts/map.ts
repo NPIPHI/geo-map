@@ -2,13 +2,12 @@ import { Feature } from "./feature";
 import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
 import { bufferConstructor } from "./bufferConstructor";
 import { KDTree, boundingBox } from "./kdTree"
-import { setFeatureNumberDisplay } from "./main"
+import { incrementFeatureNumberDisplay } from "./main"
 
 export class mapLayer {
     private featureTree: KDTree;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
-    private featureCount: number = 0;
     styleTable: { polygon: Float32Array[], outline: Float32Array[] };
 
     constructor(pointStrips: Float32Array[], ids: string[]) {
@@ -26,8 +25,7 @@ export class mapLayer {
         this.featureTree = new KDTree([], new boundingBox(0, 0, 4, 4));
     }
     addFeatures(pointStrips: Float32Array[], ids: string[]) {
-        this.featureCount += pointStrips.length;
-        setFeatureNumberDisplay(this.featureCount);
+        incrementFeatureNumberDisplay(pointStrips.length);
         let outlineMemoryPointers = bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
         let polygonMemoryPointers = bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
         for (let i = 0; i < outlineMemoryPointers.offsets.length; i++) {
@@ -37,8 +35,7 @@ export class mapLayer {
         }
     }
     addFeature(pointStrip: Float32Array, id: string){
-        this.featureCount += 1;
-        setFeatureNumberDisplay(this.featureCount);
+        incrementFeatureNumberDisplay(1);
         let feature = Feature.fromPointStrip(pointStrip, id);
         this.outlines.add(feature.outline as GPUMemoryObject);
         this.polygons.add(feature.polygon as GPUMemoryObject);
@@ -53,8 +50,7 @@ export class mapLayer {
     remove(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
         if (removed) {
-            this.featureCount --;
-            setFeatureNumberDisplay(this.featureCount);
+            incrementFeatureNumberDisplay(-1);
             this.polygons.remove(removed.polygon);
             this.outlines.remove(removed.outline);
         } else {
