@@ -119,6 +119,7 @@ function sprayFeatures(x: number, y: number, radius: number, scale: number, coun
             featureOutline[i] = featureOutline[i] * scale + x + Math.cos(theta) * offset;
             featureOutline[i+1] = featureOutline[i+1] * scale + y + Math.sin(theta) * offset;
         }
+        tileMap.setStyle(tileMap.select(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset), 3);
         featureMap.addFeature(featureOutline, "new feature " + addedFeatureIndex++);
     }
 }
@@ -141,7 +142,7 @@ canvas.addEventListener("pointerdown", pointer => {
         mouse.startx = pointer.offsetX;
         mouse.starty = pointer.offsetY;
         baseCam.x = cam.x;
-        baseCam.y = cam.y;
+        baseCam.y = cam.y;  
         cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleX;
         cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleY;
     } else if (pointer.button === 2) {
