@@ -14,9 +14,10 @@ var cam = { x: -0.5, y: -0.2, scaleX: 1, scaleY: 1 }
 var baseCam = { x: -0.5, y: -0.2 }
 var mouse = { x: 0, y: 0, left: false, right: false }
 var invalidated = false;
-var drawParams = { lines: true, polygons: true }
+var drawParams = { tile: true, feature: true, lines: true, polygons: true }
 var paintMode = false;
 var sprayMode = false;
+var addedFeatureIndex = 0;
 
 let zoom = 2.7;
 let targetZoom = 2.7;
@@ -74,9 +75,11 @@ function manageSidebar() {
     document.getElementById("ZoomLevel").innerHTML = Math.log(cam.scaleX).toFixed(1) as any;
     state.lines = drawParams.lines = (document.getElementById("lines") as any).checked;
     state.polygons = drawParams.polygons = (document.getElementById("polygons") as any).checked;
+    state.feature = drawParams.feature = (document.getElementById("feature") as any).checked;
+    state.tile = drawParams.tile = (document.getElementById("tile") as any).checked;
     paintMode = (document.getElementById("paint") as any).checked;
     sprayMode = (document.getElementById("spray") as any).checked;
-    if (lastState.lower != state.lower || lastState.upper != state.upper || lastState.lines != state.lines || lastState.polygons != state.polygons) {
+    if (lastState.lower != state.lower || lastState.upper != state.upper || lastState.lines != state.lines || lastState.polygons != state.polygons || lastState.tile != state.tile || lastState.feature != state.feature) {
         lastState = state;
         invalidate();
     }
@@ -92,8 +95,8 @@ function loop() {
     cam.scaleY = zoom;
     if(invalidated){
         renderer.clear();
-        renderer.renderMap(tileMap, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.polygons, drawParams.lines);
-        renderer.renderMap(featureMap, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY), drawParams.polygons, drawParams.lines);
+        if(drawParams.tile) renderer.renderMap(tileMap, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.polygons, drawParams.lines);
+        if(drawParams.feature) renderer.renderMap(featureMap, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY), drawParams.polygons, drawParams.lines);
         invalidated = false;
     }
     requestAnimationFrame(loop);
@@ -108,7 +111,7 @@ function sprayFeatures(x: number, y: number, radius: number, scale: number, coun
             featureOutline[i] = featureOutline[i] * scale + x + Math.cos(theta) * offset;
             featureOutline[i+1] = featureOutline[i+1] * scale + y + Math.sin(theta) * offset;
         }
-        featureMap.addFeature(featureOutline, "new feature");
+        featureMap.addFeature(featureOutline, "new feature " + addedFeatureIndex++);
     }
 }
 
@@ -184,10 +187,15 @@ canvas.addEventListener("pointermove", pointer => {
         sprayFeatures(adjustedPointer.x, adjustedPointer.y, 0.01, 0.001, 1);
         invalidate();
     }
-    let selected = tileMap.select(adjustedPointer.x, adjustedPointer.y);
+    let selected = featureMap.select(adjustedPointer.x, adjustedPointer.y);
     if (selected) {
         setHoveredElement(selected.id);
     } else {
-        setHoveredElement("none");
+        selected = tileMap.select(adjustedPointer.x, adjustedPointer.y)
+        if (selected) {
+            setHoveredElement(selected.id);
+        } else {
+            setHoveredElement("none");
+        }
     }
 })
