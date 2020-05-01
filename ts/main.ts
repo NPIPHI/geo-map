@@ -40,7 +40,7 @@ function init() {
     tileMap.setStyleTableFromArray("polygon", [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.9, 1, 0.8, 0.8, 0.8, 1, 0.9, 0.9, 0.9, 1], [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.5, 0.5, 1]);
     tileMap.setStyleTableFromArray("outline", [0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8], [0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
     featureMap.setStyleTableFromArray("polygon", [1, 0.5, 0.5, 1, 0, 0, 1, 1], [1, 0.5, 0.5, 0, 1, 1, 1, 0])
-    featureMap.setStyleTableFromArray("outline", [1, 0, 0, 4, 0, 1, 0, 4], [1, 0, 0, 1, 1, 1, 1, 0])
+    featureMap.setStyleTableFromArray("outline", [1, 0, 0, 4, 0, 1, 0, 4], [1, 0, 0, 0, 1, 1, 1, 0])
     window.onload = loop;
 }
 
@@ -49,7 +49,7 @@ export function invalidate() {
 }
 
 export function incrementFeatureNumberDisplay(featureNumberDelta: number) {
-    document.getElementById("TileNumber").innerHTML = (parseInt(document.getElementById("TileNumber").innerHTML + featureNumberDelta)) as any;
+    document.getElementById("TileNumber").innerHTML = (parseInt(document.getElementById("TileNumber").innerHTML) + featureNumberDelta) as any;
 }
 
 export function setHoveredElement(id: string) {
