@@ -12,7 +12,7 @@ var featureMap: mapLayer;
 
 var cam = { x: -0.5, y: -0.2, scaleX: 1, scaleY: 1 }
 var baseCam = { x: -0.5, y: -0.2 }
-var mouse = { x: 0, y: 0, left: false, right: false }
+var mouse = { startx: 0, starty: 0, x: 0, y: 0, left: false, right: false }
 var invalidated = false;
 var drawParams = { tile: true, feature: true, lines: true, polygons: true }
 var paintMode = false;
@@ -94,8 +94,8 @@ function loop() {
     center.y = -center.y;
     cam.x = cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
     cam.y = cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
-    baseCam.x += cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
-    baseCam.y += cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
+    //baseCam.x = cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
+    //baseCam.y = cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
     if(Math.abs(zoom - targetZoom) > 0.01){
         invalidate()
     }
@@ -138,8 +138,12 @@ canvas.addEventListener("pointerdown", pointer => {
         mouse.left = true;
         mouse.x = pointer.offsetX;
         mouse.y = pointer.offsetY;
-        cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2 / 1000 / cam.scaleX;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2 / 1000 / cam.scaleY;
+        mouse.startx = pointer.offsetX;
+        mouse.starty = pointer.offsetY;
+        baseCam.x = cam.x;
+        baseCam.y = cam.y;
+        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleX;
+        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleY;
     } else if (pointer.button === 2) {
         mouse.right = true;
         let start = performance.now();
@@ -178,8 +182,8 @@ canvas.addEventListener("pointermove", pointer => {
     mouse.x = pointer.offsetX;
     mouse.y = pointer.offsetY;
     if (mouse.left) {
-        cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2 / 1000 / cam.scaleY;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2 / 1000 / cam.scaleX;
+        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleY;
+        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleX;
         invalidate();
     }
     let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
