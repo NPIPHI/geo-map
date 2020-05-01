@@ -199,7 +199,7 @@ canvas.addEventListener("pointermove", pointer => {
     }
 
     if (sprayMode) {
-        sprayFeatures(adjustedPointer.x, adjustedPointer.y, 0.01, 0.001, 1);
+        sprayFeatures(adjustedPointer.x, adjustedPointer.y, 0.01, 0.001 * (Math.random() + 0.1), 1);
         invalidate();
     }
     let selected = featureMap.select(adjustedPointer.x, adjustedPointer.y);
