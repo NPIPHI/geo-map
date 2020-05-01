@@ -2,11 +2,14 @@ import { Feature } from "./feature";
 import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject} from "./memory";
 import { bufferConstructor } from "./bufferConstructor";
 import { KDTree, boundingBox } from "./kdTree"
+import { setFeatureNumberDisplay } from "./main"
 
 export class mapLayer{
-    featureTree: KDTree;
+    private featureTree: KDTree;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
+    private featureCount: number = 0;
+
     constructor(pointStrips: Float32Array[], ids: string[]){
         let outlineData = bufferConstructor.outlineBuffer(pointStrips);
         let polygonData = bufferConstructor.polygonBuffer(pointStrips);
@@ -22,6 +25,8 @@ export class mapLayer{
         this.featureTree = new KDTree([], new boundingBox(0, 0, 4, 4));
     }
     addFeatures(pointStrips: Float32Array[], ids: string[]){
+        this.featureCount += pointStrips.length;
+        setFeatureNumberDisplay(this.featureCount);
         let outlineMemoryPointers = bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
         let polygonMemoryPointers = bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
         for(let i = 0; i < outlineMemoryPointers.offsets.length; i++){
@@ -38,8 +43,12 @@ export class mapLayer{
     }
     remove(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
-        this.polygons.remove(removed.polygon);
-        this.outlines.remove(removed.outline)
+        if(removed){
+            this.polygons.remove(removed.polygon);
+            this.outlines.remove(removed.outline);
+        } else {
+            console.warn("No feature in selected location")
+        }
     }
     setStyle(feature: Feature, style: number){
         if(feature === undefined){

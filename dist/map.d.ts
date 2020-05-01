@@ -1,10 +1,11 @@
 import { Feature } from "./feature";
 import { GPUBufferSet } from "./memory";
-import { KDTree, boundingBox } from "./kdTree";
+import { boundingBox } from "./kdTree";
 export declare class mapLayer {
-    featureTree: KDTree;
+    private featureTree;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
+    private featureCount;
     constructor(pointStrips: Float32Array[], ids: string[]);
     addFeatures(pointStrips: Float32Array[], ids: string[]): void;
     select(x: number, y: number): Feature | undefined;

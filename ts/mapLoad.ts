@@ -36,7 +36,7 @@ export async function parseMapJson(path: string = "../mapData/slabs.json"): Prom
             strip[i*2] = (points[i][0] - xOffset) * xRescale;
             strip[i*2+1] = (points[i][1] - yOffset) * yRescale;
         }
-        idList.push(slab.properties.BRANCH_ID + "-" + slab.properties.SECTION_ID + "-" + slab.properties.SAMPLE_ID);
+        idList.push(slab.properties.BRANCH_ID + "-" + slab.properties.SECTION_ID + "-" + slab.properties.postgis_id);
         pointPaths.push(strip);
     })
     return {points: pointPaths, ids: idList};
