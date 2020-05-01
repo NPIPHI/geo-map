@@ -87,7 +87,15 @@ function manageSidebar() {
 
 function loop() {
     manageSidebar();
-    zoom = zoom + (targetZoom - zoom) * 0.1;
+    let deltaZoom = (targetZoom - zoom) * 0.1
+    zoom = zoom + deltaZoom;
+    let center = camera.toWorldSpace(mouse.x, mouse.y, cam, canvas);
+    center.x = -center.x;
+    center.y = -center.y;
+    cam.x = cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
+    cam.y = cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
+    baseCam.x += cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
+    baseCam.y += cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
     if(Math.abs(zoom - targetZoom) > 0.01){
         invalidate()
     }
@@ -167,6 +175,8 @@ canvas.addEventListener("pointerup", pointer => {
 })
 
 canvas.addEventListener("pointermove", pointer => {
+    mouse.x = pointer.offsetX;
+    mouse.y = pointer.offsetY;
     if (mouse.left) {
         cam.x = baseCam.x + (pointer.offsetX - mouse.x) * 2 / 1000 / cam.scaleY;
         cam.y = baseCam.y - (pointer.offsetY - mouse.y) * 2 / 1000 / cam.scaleX;
