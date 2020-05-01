@@ -206,7 +206,9 @@ class KDNode {
     popFirst(x: number, y: number): spatialElement | undefined {
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.contains(x, y)) {
-                return this.elements.splice(i, 1)[0];
+                if(this.inShape(this.elements[i].shape, x, y)){
+                    return this.elements.splice(i, 1)[0];
+                }
             }
         }
         if (this.node1 && this.node1.bBox.contains(x, y)) {
