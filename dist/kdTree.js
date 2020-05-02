@@ -38,12 +38,12 @@ class KDHeep {
     constructor(elements, bBox, depth = 1) {
     }
 }
-exports.KDHeep = KDHeep;
 class KDTree {
-    constructor(elements, bBox, recursiveDepth = 8) {
+    constructor(elements, bBox, recursiveDepth = 10) {
         this.topNode = new KDNode(elements, bBox, recursiveDepth, true);
+        this.outsideElements = [];
     }
-    static async buildAsync(elements, bBox, recursiveDepth = 8) {
+    static async buildAsync(elements, bBox, recursiveDepth = 10) {
         return new Promise((resolve, reject) => {
             let tree = new KDTree(elements, bBox, recursiveDepth);
             resolve(tree);
@@ -51,23 +51,51 @@ class KDTree {
     }
     find(x, y) {
         let returnList = [];
-        this.topNode.find(x, y, returnList);
+        if (this.topNode.bBox.contains(x, y)) {
+            this.topNode.find(x, y, returnList);
+        }
+        else {
+            return this.outsideElements.filter(ele => ele.bBox.contains(x, y));
+        }
         return returnList;
+    }
+    findFirst(x, y) {
+        if (this.topNode.bBox.contains(x, y)) {
+            return this.topNode.findFirst(x, y);
+        }
+        else {
+            return this.outsideElements.find(ele => ele.bBox.contains(x, y));
+        }
     }
     findSelection(bBox) {
         let returnList = [];
-        this.topNode.findSelection(bBox, returnList);
+        if (this.topNode.bBox.intesects(bBox)) {
+            this.topNode.findSelection(bBox, returnList);
+        }
+        else {
+            return this.outsideElements.filter(ele => ele.bBox.intesects(bBox));
+        }
         return returnList;
     }
     popFirst(x, y) {
-        return this.topNode.popFirst(x, y);
+        if (this.topNode.bBox.contains(x, y)) {
+            return this.topNode.popFirst(x, y);
+        }
+        else {
+            for (let i = 0; i < this.outsideElements.length; i++) {
+                if (this.outsideElements[i].bBox.contains(x, y)) {
+                    return this.outsideElements.splice(i, 1)[0];
+                }
+            }
+        }
+        return undefined;
     }
     insert(element) {
         if (this.topNode.bBox.intesects(element.bBox)) {
             this.topNode.insert(element);
         }
         else {
-            throw ("feature outsied of tree");
+            this.outsideElements.push(element);
         }
     }
 }
@@ -143,6 +171,27 @@ class KDNode {
             this.node2.find(x, y, returnList);
         }
     }
+    findFirst(x, y) {
+        for (let i = 0; i < this.elements.length; i++) {
+            if (this.elements[i].bBox.contains(x, y)) {
+                if (this.inShape(this.elements[i].shape, x, y)) {
+                    return this.elements[i];
+                }
+            }
+        }
+        let found;
+        if (this.node1 && this.node1.bBox.contains(x, y)) {
+            found = this.node1.findFirst(x, y);
+            if (found)
+                return found;
+        }
+        if (this.node2 && this.node2.bBox.contains(x, y)) {
+            found = this.node2.findFirst(x, y);
+            if (found)
+                return found;
+        }
+        return null;
+    }
     findSelection(bBox, returnList) {
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.intesects(bBox)) {
@@ -159,7 +208,9 @@ class KDNode {
     popFirst(x, y) {
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.contains(x, y)) {
-                return this.elements.splice(i, 1)[0];
+                if (this.inShape(this.elements[i].shape, x, y)) {
+                    return this.elements.splice(i, 1)[0];
+                }
             }
         }
         if (this.node1 && this.node1.bBox.contains(x, y)) {

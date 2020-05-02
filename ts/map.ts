@@ -28,7 +28,7 @@ export class mapLayer {
         incrementFeatureNumberDisplay(pointStrips.length);
         let outlineMemoryPointers = bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
         let polygonMemoryPointers = bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
-        for (let i = 0; i < outlineMemoryPointers.offsets.length; i++) {
+        for (let i = 0; i < pointStrips.length; i++) {
             this.featureTree.insert(new Feature(pointStrips[i], ids[i],
                 new GPUMemoryPointer(outlineMemoryPointers.offsets[i], outlineMemoryPointers.widths[i]),
                 new GPUMemoryPointer(polygonMemoryPointers.offsets[i], polygonMemoryPointers.widths[i])))

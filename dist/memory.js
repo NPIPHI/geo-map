@@ -243,6 +243,7 @@ class GPUMemoryPointer {
 exports.GPUMemoryPointer = GPUMemoryPointer;
 class GPUMemoryObject {
     constructor(width, data) {
+        this.GPUOffset = -1;
         this.GPUWidth = width;
         this.GPUData = data;
     }

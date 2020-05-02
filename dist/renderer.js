@@ -20,12 +20,17 @@ class mapRenderer {
         this.gl = gl;
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.depthFunc(this.gl.LEQUAL);
-        this.gl.clearColor(0, 0, 0, 1);
+        this.gl.clearColor(0.7, 0.7, 0.7, 1);
         this.gl.clearDepth(1);
+        this.gl.enable(gl.BLEND);
+        this.gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.polyProgam = this.initShaderProgram(shaders.polygon);
         this.outlineProgram = this.initShaderProgram(shaders.outline);
         this.styleTransitionBoundry = { min: 30, max: 60 };
+        this.styleTables = [];
+        this.styleTables.push({ zoomIn: new Float32Array(128 * 4), zoomOut: new Float32Array(128 * 4) });
+        this.styleTables.push({ zoomIn: new Float32Array(128 * 4), zoomOut: new Float32Array(128 * 4) });
     }
     setTransitionBoundry(min, max) {
         this.styleTransitionBoundry = { min, max };
@@ -34,10 +39,10 @@ class mapRenderer {
         return Math.min(Math.max((viewMatrix[4] - this.styleTransitionBoundry.min) / (this.styleTransitionBoundry.max - this.styleTransitionBoundry.min), 0), 1);
     }
     renderMap(map, viewMatrix, poly, outline) {
-        if (poly)
-            this.renderPolygon2dFromBuffer(map.polygons, viewMatrix);
-        if (outline)
-            this.renderOutline2dFromBuffer(map.outlines, viewMatrix);
+        if (poly && map.polygons.head)
+            this.renderPolygon2dFromBuffer(map.polygons, map.styleTable.polygon, viewMatrix);
+        if (outline && map.polygons.head)
+            this.renderOutline2dFromBuffer(map.outlines, map.styleTable.outline, viewMatrix);
     }
     renderLine2d(vertexBuffer, colorBuffer, length, viewMatrix) {
         this.gl.useProgram(this.polyProgam.program);
@@ -53,7 +58,7 @@ class mapRenderer {
     renderLine2dFromBuffer(bufferset, viewMatrix) {
         this.renderLine2d(bufferset.buffers[0].buffer, bufferset.buffers[1].buffer, bufferset.head, viewMatrix);
     }
-    renderPolygon2d(vertexBuffer, styleBuffer, length, viewMatrix, drawMode = this.gl.TRIANGLES) {
+    renderPolygon2d(vertexBuffer, styleBuffer, length, styleTable, viewMatrix, drawMode = this.gl.TRIANGLES) {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
@@ -61,23 +66,21 @@ class mapRenderer {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, styleBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexStyle"));
         this.gl.vertexAttribIPointer(this.polyProgam.attribLocations.get("vertexStyle"), 1, this.gl.INT, 0, 0);
-        let styledata1 = new Float32Array([0.2, 0.2, 0.2, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
-        let styledata2 = new Float32Array([0.6, 0.6, 0.6, 0, 1, 0, 1, 0, 1, 0, 0, 0]);
         let styleScalar = this.getTransitionScalar(viewMatrix);
         this.gl.uniform1f(this.polyProgam.uniformLocations.get("STYLESCALAR"), styleScalar);
         this.gl.uniform1f(this.polyProgam.uniformLocations.get("ZOOMLEVEL"), viewMatrix[0]);
         this.gl.uniform1f(this.polyProgam.uniformLocations.get("RENDERHEIGHT"), this.gl.canvas.height);
-        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE1"), styledata1);
-        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE2"), styledata2);
+        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE1"), styleTable[0]);
+        this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE2"), styleTable[1]);
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }
-    renderPolygon2dFromBuffer(bufferSet, viewMatrix) {
+    renderPolygon2dFromBuffer(bufferSet, styleTable, viewMatrix) {
         bufferSet.lock();
-        this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, viewMatrix);
+        this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, styleTable, viewMatrix);
         setTimeout(() => bufferSet.unlock(), 40000);
     }
-    renderOutline2d(vertexBuffer, normalBuffer, styleBuffer, length, viewMatrix) {
+    renderOutline2d(vertexBuffer, normalBuffer, styleBuffer, length, styleTable, viewMatrix) {
         let drawMode = this.gl.TRIANGLE_STRIP;
         this.gl.useProgram(this.outlineProgram.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
@@ -89,20 +92,18 @@ class mapRenderer {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, styleBuffer);
         this.gl.enableVertexAttribArray(this.outlineProgram.attribLocations.get("vertexStyle"));
         this.gl.vertexAttribIPointer(this.outlineProgram.attribLocations.get("vertexStyle"), 1, this.gl.INT, 0, 0);
-        let styledata1 = new Int32Array([1, 0, 0, 3, 0, 1, 0, 3, 0, 0, 1, 20]);
-        let styledata2 = new Int32Array([1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0]);
         let styleScalar = this.getTransitionScalar(viewMatrix);
         this.gl.uniform1f(this.outlineProgram.uniformLocations.get("STYLESCALAR"), styleScalar);
         this.gl.uniform1f(this.outlineProgram.uniformLocations.get("ZOOMLEVEL"), viewMatrix[0]);
         this.gl.uniform1f(this.outlineProgram.uniformLocations.get("RENDERHEIGHT"), this.gl.canvas.height);
-        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE1"), styledata1);
-        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE2"), styledata2);
+        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE1"), styleTable[0]);
+        this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE2"), styleTable[1]);
         this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }
-    renderOutline2dFromBuffer(bufferSet, viewMatrix) {
+    renderOutline2dFromBuffer(bufferSet, styleTable, viewMatrix) {
         bufferSet.lock();
-        this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, viewMatrix);
+        this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, styleTable, viewMatrix);
         setTimeout(() => bufferSet.unlock(), 40000);
     }
     clear() {
