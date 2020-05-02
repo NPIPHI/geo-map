@@ -35,8 +35,8 @@ function init() {
     mouse.startx = canvas.width/2;
     mouse.starty = canvas.height/2;
     console.log(performance.now())
-    //tileMap = loadMapChuncksBinary("./binaryChuncks");
-    tileMap = loadMapChuncks("./chuncks")
+    tileMap = loadMapChuncksBinary("./binaryChuncks");
+    //tileMap = loadMapChuncks("./chuncks")
     featureMap = new mapLayer([], []);
     renderer = new mapRenderer(gl);
     tileMap.setStyleTableFromArray("polygon", [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.9, 1, 0.8, 0.8, 0.8, 1, 0.9, 0.9, 0.9, 1], [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.5, 0.5, 1]);

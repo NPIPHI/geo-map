@@ -2,7 +2,7 @@ import { mapLayer } from "./map"
 import { invalidate } from "./main"
 
 const bbox = { minx: 6429499.583465844, miny: 1797629.5004901737, maxx: 6446651.559660509, maxy: 1805369.9351405054 }
-const resizeRatio = (bbox.maxx-bbox.minx) / (bbox.maxy-bbox.miny)
+const resizeRatio = (bbox.maxx - bbox.minx) / (bbox.maxy - bbox.miny)
 export async function loadMapBinary(): Promise<{ points: Float32Array[], ids: string[] }> {
     let file = await fetch("../mapData/output.buf");
     let buffer = await file.arrayBuffer()
@@ -32,18 +32,18 @@ function addMapBinary(path: string, target: mapLayer) {
     return new Promise(resolve => {
         parseMapBinary(path).then(mapData => {
             let time1 = performance.now();
-            target.addFeatures(mapData, []);
+            target.addFeatures(mapData.points, mapData.ids);
             invalidate();
-            console.log(`Adding ${mapData.length} features took ${performance.now() - time1} ms`)
+            console.log(`Adding ${mapData.points.length} features took ${performance.now() - time1} ms`)
             console.log(performance.now())
             resolve();
         });
     })
 }
 
-async function parseMapBinary(path: string): Promise<Float32Array[]> {
+async function parseMapBinary(path: string): Promise<{points: Float32Array[], ids: string[]}> {
     return new Promise(resolve => {
-        new binaryLoader(path, (points: Float32Array, indices: Int32Array) => {
+        new binaryLoader(path, (points: Float32Array, indices: Int32Array, meta: string[]) => {
             let pointPaths: Float32Array[] = [];
             for (let i = 0; i < indices.length; i += 2) {
                 let path = new Float32Array(indices[i + 1] * 2)
@@ -53,7 +53,7 @@ async function parseMapBinary(path: string): Promise<Float32Array[]> {
                 }
                 pointPaths.push(path);
             }
-            resolve(pointPaths);
+            resolve({points: pointPaths, ids: meta});
         })
     })
 }
@@ -61,21 +61,30 @@ async function parseMapBinary(path: string): Promise<Float32Array[]> {
 class binaryLoader {
     points: Float32Array;
     indices: Int32Array;
-    resolve: (arg0: Float32Array, arg1: Int32Array) => void;
-    constructor(path: string, resolve: (arg0: Float32Array, arg1: Int32Array) => void) {
+    metadata: string[];
+    resolve: (arg0: Float32Array, arg1: Int32Array, arg2: string[]) => void;
+    constructor(path: string, resolve: (arg0: Float32Array, arg1: Int32Array, arg2: string[]) => void) {
         fetch(path + "points.bin").then(points => {
             points.arrayBuffer().then(buffer => {
                 this.points = new Float32Array(new Int8Array(buffer).buffer);
-                if (this.indices) {
-                    this.resolve(this.points, this.indices)
+                if (this.indices && this.metadata) {
+                    this.resolve(this.points, this.indices, this.metadata)
                 }
             })
         })
         fetch(path + "indices.bin").then(indices => {
             indices.arrayBuffer().then(buffer => {
                 this.indices = new Int32Array(new Int8Array(buffer).buffer);
-                if (this.points) {
-                    this.resolve(this.points, this.indices)
+                if (this.points && this.metadata) {
+                    this.resolve(this.points, this.indices, this.metadata)
+                }
+            })
+        });
+        fetch(path + "meta.json").then(fileString => {
+            fileString.json().then(json => {
+                this.metadata = json;
+                if (this.points && this.indices) {
+                    this.resolve(this.points, this.indices, this.metadata)
                 }
             })
         });
