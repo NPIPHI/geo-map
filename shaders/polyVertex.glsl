@@ -3,8 +3,8 @@
 in vec2 vertexPosition;
 in int vertexStyle;
 
-uniform vec4[32] STYLETABLE1;
-uniform vec4[32] STYLETABLE2;
+uniform vec4[4] STYLETABLE1;
+uniform vec4[4] STYLETABLE2;
 uniform mat3 VIEW;
 uniform float STYLESCALAR;
 uniform float ZOOMLEVEL;
