@@ -133,62 +133,7 @@ function sprayFeatures(x: number, y: number, radius: number, scale: number, coun
     }
 }
 
-init();
-
-window.addEventListener("resize", sizeCanvas);
-
-canvas.addEventListener("wheel", mouse => {
-    targetZoom *= Math.pow(1.01, -mouse.deltaY);
-    invalidate();
-    window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
-})
-
-canvas.addEventListener("pointerdown", pointer => {
-    if (pointer.button === 0) {
-        mouse.left = true;
-        mouse.x = pointer.offsetX;
-        mouse.y = pointer.offsetY;
-        mouse.startx = pointer.offsetX;
-        mouse.starty = pointer.offsetY;
-        baseCam.x = cam.x;
-        baseCam.y = cam.y;  
-        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleX;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleY;
-    } else if (pointer.button === 2) {
-        mouse.right = true;
-        let start = performance.now();
-        let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
-        let featureSelection = featureMap.select(adjustedPointer.x, adjustedPointer.y);
-        if(featureSelection){
-            featureMap.setStyle(featureSelection, 1);
-        } else {
-            tileMap.setStyle(tileMap.select(adjustedPointer.x, adjustedPointer.y), 2);
-        }
-        console.log(`selecting and styling 1 feature took ${performance.now()-start} ms`);
-        invalidate();
-    } else {
-        let start = performance.now()
-        let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
-        tileMap.remove(adjustedPointer.x, adjustedPointer.y);
-        console.log(`selecting and removing 1 feature took ${performance.now()-start} ms`);
-        invalidate();
-    }
-})
-
-canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); return false })
-
-canvas.addEventListener("pointerup", pointer => {
-    if (pointer.button === 0) {
-        mouse.left = false;
-        baseCam = { x: cam.x, y: cam.y }
-        window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
-    } 
-    if (pointer.button === 2) {
-        mouse.right = false;
-    }
-})
-
-canvas.addEventListener("pointermove", pointer => {
+function mouseMove(pointer: {offsetX: number, offsetY: number}){
     mouse.x = pointer.offsetX;
     mouse.y = pointer.offsetY;
     if (mouse.left) {
@@ -196,7 +141,7 @@ canvas.addEventListener("pointermove", pointer => {
         cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleX;
         invalidate();
     }
-    let adjustedPointer = camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
+    let adjustedPointer = camera.toWorldSpace(pointer.offsetX, pointer.offsetY, cam, canvas);
     if (paintMode) {
         let time1 = performance.now();
         let selection = tileMap.selectRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
@@ -222,4 +167,80 @@ canvas.addEventListener("pointermove", pointer => {
             setHoveredElement("none");
         }
     }
+}
+
+function mouseDown(pointer: {offsetX: number, offsetY: number, button: number}){
+    if (pointer.button === 0) {
+        mouse.left = true;
+        mouse.x = pointer.offsetX;
+        mouse.y = pointer.offsetY;
+        mouse.startx = pointer.offsetX;
+        mouse.starty = pointer.offsetY;
+        baseCam.x = cam.x;
+        baseCam.y = cam.y;  
+        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleX;
+        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleY;
+    } else if (pointer.button === 2) {
+        mouse.right = true;
+        let start = performance.now();
+        let adjustedPointer = camera.toWorldSpace(pointer.offsetX, pointer.offsetY, cam, canvas);
+        let featureSelection = featureMap.select(adjustedPointer.x, adjustedPointer.y);
+        if(featureSelection){
+            featureMap.setStyle(featureSelection, 1);
+        } else {
+            tileMap.setStyle(tileMap.select(adjustedPointer.x, adjustedPointer.y), 2);
+        }
+        console.log(`selecting and styling 1 feature took ${performance.now()-start} ms`);
+        invalidate();
+    } else {
+        let start = performance.now()
+        let adjustedPointer = camera.toWorldSpace(pointer.offsetX, pointer.offsetY, cam, canvas);
+        tileMap.remove(adjustedPointer.x, adjustedPointer.y);
+        console.log(`selecting and removing 1 feature took ${performance.now()-start} ms`);
+        invalidate();
+    }
+}
+
+function mouseUp(pointer: {offsetX: number, offsetY: number, button: number}){
+    if (pointer.button === 0) {
+        mouse.left = false;
+        baseCam = { x: cam.x, y: cam.y }
+        window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
+    } 
+    if (pointer.button === 2) {
+        mouse.right = false;
+    }
+}
+
+function mouseScroll(mouse: {deltaY: number}){
+    targetZoom *= Math.pow(1.01, -mouse.deltaY);
+    invalidate();
+}
+
+init();
+
+window.addEventListener("resize", sizeCanvas);
+
+canvas.addEventListener("wheel", mouseScroll)
+
+canvas.addEventListener("pointerdown", mouseDown)
+
+canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); return false })
+
+canvas.addEventListener("pointerup", mouseUp)
+
+canvas.addEventListener("pointermove", mouseMove)
+
+canvas.addEventListener("touchstart", event=>{
+    if(event.touches.length == 1){
+        mouseDown({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
+    }
 })
+canvas.addEventListener("touchmove", event=>{
+    mouseMove({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY})
+})
+canvas.addEventListener("touchend", event=>{
+    if(event.touches.length == 1){
+        mouseUp({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
+    }
+});
