@@ -237,10 +237,34 @@ canvas.addEventListener("touchstart", event=>{
     }
 })
 canvas.addEventListener("touchmove", event=>{
-    mouseMove({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY})
+    let x = 0, y = 0;
+    for (let i = 0; i < event.touches.length; i++) {
+        const touch = event.touches[i];
+        x += touch.clientX;
+        y += touch.clientY;
+    }
+    x /= event.touches.length;
+    y /= event.touches.length;
+    mouseMove({offsetX: x, offsetY: y})
 })
 canvas.addEventListener("touchend", event=>{
+    let x = 0, y = 0;
+    for (let i = 0; i < event.touches.length; i++) {
+        const touch = event.touches[i];
+        x += touch.clientX;
+        y += touch.clientY;
+    }
+    x /= event.touches.length;
+    y /= event.touches.length;
     if(event.touches.length == 1){
-        mouseUp({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
+        mouseUp({offsetX: x, offsetY: y, button: 0})
     }
 });
+
+var lastGestureScale: number;
+canvas.addEventListener("gesturestart", gesture=>{
+    lastGestureScale = 1;
+})
+canvas.addEventListener("gesturechange", gesture=>{
+    mouseScroll({deltaY: (Math.log(lastGestureScale / (gesture as any).scale))});
+})
