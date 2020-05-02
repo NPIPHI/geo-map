@@ -188,7 +188,7 @@ class KDNode {
             found = this.node2.findFirst(x, y)
             if(found) return found;
         }
-        return null;
+        return undefined;
     }
     findSelection(bBox: boundingBox, returnList: spatialElement[]){
         for (let i = 0; i < this.elements.length; i++) {
