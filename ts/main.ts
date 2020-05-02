@@ -10,8 +10,8 @@ var canvas: HTMLCanvasElement;
 var tileMap: mapLayer;
 var featureMap: mapLayer;
 
-var cam = { x: -0.5, y: -0.2, scaleX: 1, scaleY: 1 }
-var baseCam = { x: -0.5, y: -0.2 }
+var cam = { x: -1, y: -0.4, scaleX: 1, scaleY: 1 }
+var baseCam = { x: -1, y: -0.4 }
 var mouse = { startx: 0, starty: 0, x: 0, y: 0, left: false, right: false }
 var invalidated = false;
 var drawParams = { tile: true, feature: true, lines: true, polygons: true }
@@ -19,8 +19,8 @@ var paintMode = false;
 var sprayMode = false;
 var featureInfoTracker = {addedIndex: 0, totalCount: 0, displayedCount: 0}
 
-let zoom = 2.71;
-let targetZoom = 2.71;
+let zoom = 1;
+let targetZoom = 1;
 
 function init() {
     canvas = document.createElement("canvas");
