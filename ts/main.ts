@@ -266,5 +266,6 @@ canvas.addEventListener("gesturestart", gesture=>{
     lastGestureScale = 1;
 })
 canvas.addEventListener("gesturechange", gesture=>{
-    mouseScroll({deltaY: (Math.log(lastGestureScale / (gesture as any).scale))});
+    mouseScroll({deltaY: (Math.log(lastGestureScale / (gesture as any).scale) * 100)});
+    lastGestureScale = (gesture as any).scale;
 })
