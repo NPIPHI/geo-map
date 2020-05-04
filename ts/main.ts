@@ -232,10 +232,12 @@ canvas.addEventListener("pointerup", mouseUp)
 canvas.addEventListener("pointermove", mouseMove)
 
 canvas.addEventListener("touchstart", event=>{
+    event.preventDefault();
     if(event.touches.length == 1){
         mouseDown({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
     }
     if(event.touches.length == 2){
+        alert("asdf")
         drawParams.polygons = false;
     }
 })
