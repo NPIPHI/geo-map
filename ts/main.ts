@@ -235,6 +235,9 @@ canvas.addEventListener("touchstart", event=>{
     if(event.touches.length == 1){
         mouseDown({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
     }
+    if(event.touches.length == 2){
+        drawParams.polygons = false;
+    }
 })
 canvas.addEventListener("touchmove", event=>{
     let x = 0, y = 0;
@@ -261,11 +264,11 @@ canvas.addEventListener("touchend", event=>{
     }
 });
 
-var lastGestureScale: number;
-canvas.addEventListener("gesturestart", gesture=>{
-    lastGestureScale = 1;
-})
-canvas.addEventListener("gesturechange", gesture=>{
-    mouseScroll({deltaY: (Math.log(lastGestureScale / (gesture as any).scale) * 100)});
-    lastGestureScale = (gesture as any).scale;
-})
+// var lastGestureScale: number;
+// canvas.addEventListener("gesturestart", gesture=>{
+//     lastGestureScale = 1;
+// })
+// canvas.addEventListener("gesturechange", gesture=>{
+//     mouseScroll({deltaY: (Math.log(lastGestureScale / (gesture as any).scale) * 100)});
+//     lastGestureScale = (gesture as any).scale;
+// })
