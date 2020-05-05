@@ -2,6 +2,7 @@ import * as matrix from "gl-matrix";
 export declare class camera {
     view: matrix.mat3;
     private canvasView;
+    private inverseView;
     private lastpoint;
     constructor(width?: number, height?: number);
     touchDown(x: number, y: number): void;
