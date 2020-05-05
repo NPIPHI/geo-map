@@ -126,14 +126,14 @@ function sprayFeatures(x: number, y: number, radius: number, scale: number, coun
     }
 }
 
-function mouseMove(pointer: {offsetX: number, offsetY: number}){
-    mouse.x = pointer.offsetX;
-    mouse.y = pointer.offsetY;
+function mouseMove(pointer: {x: number, y: number}){
+    mouse.x = pointer.x;
+    mouse.y = pointer.y;
     if (mouse.left) {
-        cam.touchMove(pointer.offsetX, pointer.offsetY);
+        cam.onePointMove(pointer.x, pointer.y);
         invalidate();
     }
-    let adjustedPointer = cam.toWorldSpace(pointer.offsetX, pointer.offsetY);
+    let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
     if (paintMode) {
         let time1 = performance.now();
         let selection = tileMap.selectRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
@@ -161,18 +161,18 @@ function mouseMove(pointer: {offsetX: number, offsetY: number}){
     }
 }
 
-function mouseDown(pointer: {offsetX: number, offsetY: number, button: number}){
+function mouseDown(pointer: {x: number, y: number, button: number}){
     if (pointer.button === 0) {
-        cam.touchDown(pointer.offsetX, pointer.offsetY)
+        cam.onePointDown(pointer.x, pointer.y)
         mouse.left = true;
-        mouse.x = pointer.offsetX;
-        mouse.y = pointer.offsetY;
-        mouse.startx = pointer.offsetX;
-        mouse.starty = pointer.offsetY;
+        mouse.x = pointer.x;
+        mouse.y = pointer.y;
+        mouse.startx = pointer.x;
+        mouse.starty = pointer.y;
     } else if (pointer.button === 2) {
         mouse.right = true;
         let start = performance.now();
-        let adjustedPointer = cam.toWorldSpace(pointer.offsetX, pointer.offsetY);
+        let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
         let featureSelection = featureMap.select(adjustedPointer.x, adjustedPointer.y);
         if(featureSelection){
             featureMap.setStyle(featureSelection, 1);
@@ -183,7 +183,7 @@ function mouseDown(pointer: {offsetX: number, offsetY: number, button: number}){
         invalidate();
     } else {
         let start = performance.now()
-        let adjustedPointer = cam.toWorldSpace(pointer.offsetX, pointer.offsetY);
+        let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
         tileMap.remove(adjustedPointer.x, adjustedPointer.y);
         console.log(`selecting and removing 1 feature took ${performance.now()-start} ms`);
         invalidate();
@@ -219,11 +219,10 @@ canvas.addEventListener("pointerup", mouseUp)
 canvas.addEventListener("pointermove", mouseMove)
 
 
-let pinchDistance: number;
 let touch1: Touch;
 let touch2: Touch;
-canvas.addEventListener("touchstart", event=>{
-    event.preventDefault();
+let newTouch: Touch;
+function updateTouches(event: TouchEvent){
     let t1ID = null;
     let t2ID = null;
     if(touch1){
@@ -234,7 +233,6 @@ canvas.addEventListener("touchstart", event=>{
     }
     touch1 = undefined;
     touch2 = undefined;
-    let newTouch;
     for (let i = 0; i < event.touches.length; i++) {
         const touch = event.touches[i];
         if(touch.identifier == t1ID){
@@ -245,87 +243,31 @@ canvas.addEventListener("touchstart", event=>{
             newTouch = touch;
         }
     }
+}
+canvas.addEventListener("touchstart", event=>{
+    event.preventDefault();
+    updateTouches(event);
     if(!touch1){
         touch1 = newTouch;
-        mouseDown({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
     } else if(!touch2){
         touch2 = newTouch;
-        let x = (touch1.clientX - touch2.clientX);
-        let y = (touch1.clientY - touch2.clientY);
-        pinchDistance = Math.sqrt(x*x + y*y);
+        cam.twoPointDown({x: touch1.clientX, y: touch1.clientY}, {x: touch2.clientX, y: touch2.clientY})
+        invalidate();
     }
 })
 canvas.addEventListener("touchmove", event=>{
-    let t1ID = null;
-    let t2ID = null;
-    if(touch1){
-        t1ID = touch1.identifier;
-    }
-    if(touch2){
-        t2ID = touch2.identifier;
-    }
-    touch1 = undefined;
-    touch2 = undefined;
-    let newTouch;
-    for (let i = 0; i < event.touches.length; i++) {
-        const touch = event.touches[i];
-        if(touch.identifier == t1ID){
-            touch1 = touch;
-        } else if(touch.identifier == t2ID){
-            touch2 = touch;
-        } else {
-            newTouch = touch;
-        }
-    }
+    updateTouches(event);
     if(touch1 && touch2){
-        let x = (touch1.clientX - touch2.clientX);
-        let y = (touch1.clientY - touch2.clientY);
-        let newDistance = Math.sqrt(x*x + y*y);
-        mouseScroll({deltaY: Math.log(pinchDistance/newDistance) * 100})
-        pinchDistance = newDistance;
+        cam.twoPointMove({x: touch1.clientX, y: touch1.clientY}, {x: touch2.clientX, y: touch2.clientY})
+        invalidate();
     }
     if(touch1){
-        let x = touch1.clientX;
-        let y = touch1.clientY;
-        mouseMove({offsetX: x, offsetY: y})
+
     }
 })
 canvas.addEventListener("touchend", event=>{
-    let t1ID;
-    let t2ID;
-    if(touch1){
-        t1ID = touch1.identifier;
-    }
-    if(touch2){
-        t2ID = touch2.identifier;
-    }
-    touch1 = undefined;
-    touch2 = undefined;
-    for (let i = 0; i < event.touches.length; i++) {
-        const touch = event.touches[i];
-        if(touch.identifier == t1ID){
-            touch1 = touch;
-        }
-        if(touch.identifier == t2ID){
-            touch2 = touch;
-        }
-    }
-    if(touch1){
-
-    } else if(touch2){
-        mouseUp({offsetX: mouse.x, offsetY: mouse.y, button: 0})
-        mouseDown({offsetX: touch2.clientX, offsetY: touch2.clientY, button: 0})
-        touch1 = touch2;
-    } else {
-        mouseUp({offsetX: mouse.x, offsetY: mouse.y, button: 0})
+    updateTouches(event);
+    if(touch2 && !touch1){
+        touch2 = touch1;
     }
 });
-
-// var lastGestureScale: number;
-// canvas.addEventListener("gesturestart", gesture=>{
-//     lastGestureScale = 1;
-// })
-// canvas.addEventListener("gesturechange", gesture=>{
-//     mouseScroll({deltaY: (Math.log(lastGestureScale / (gesture as any).scale) * 100)});
-//     lastGestureScale = (gesture as any).scale;
-// })

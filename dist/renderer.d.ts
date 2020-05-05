@@ -9,6 +9,7 @@ export declare class mapRenderer {
     constructor(gl: WebGL2RenderingContext);
     setTransitionBoundry(min: number, max: number): void;
     private getTransitionScalar;
+    private getZoomLevel;
     renderMap(map: mapLayer, viewMatrix: mat3, poly: boolean, outline: boolean): void;
     private renderLine2d;
     private renderLine2dFromBuffer;

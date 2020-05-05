@@ -3,11 +3,26 @@ export declare class camera {
     view: matrix.mat3;
     private canvasView;
     private inverseView;
-    private lastpoint;
+    private onePointTouchLocation;
+    private twoPointTouchLocations;
     constructor(width?: number, height?: number);
-    touchDown(x: number, y: number): void;
-    touchMove(x: number, y: number): void;
+    onePointDown(x: number, y: number): void;
+    onePointMove(x: number, y: number): void;
     zoom(scalar: number, x?: number, y?: number): void;
+    twoPointDown(p1: {
+        x: number;
+        y: number;
+    }, p2: {
+        x: number;
+        y: number;
+    }): void;
+    twoPointMove(p1: {
+        x: number;
+        y: number;
+    }, p2: {
+        x: number;
+        y: number;
+    }): void;
     setAespectRatio(width: number, height: number): void;
     toWorldSpace(x: number, y: number): {
         x: number;

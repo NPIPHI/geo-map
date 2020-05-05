@@ -41,7 +41,10 @@ export class mapRenderer {
         this.styleTransitionBoundry = {min, max};
     }
     private getTransitionScalar(viewMatrix: mat3){
-        return Math.min(Math.max((viewMatrix[4]-this.styleTransitionBoundry.min)/(this.styleTransitionBoundry.max - this.styleTransitionBoundry.min),0),1);
+        return Math.min(Math.max((this.getZoomLevel(viewMatrix)-this.styleTransitionBoundry.min)/(this.styleTransitionBoundry.max - this.styleTransitionBoundry.min),0),1);
+    }
+    private getZoomLevel(viewMatrix: mat3): number{
+        return Math.hypot(viewMatrix[0], viewMatrix[1])
     }
     renderMap(map: mapLayer, viewMatrix: mat3, poly: boolean, outline: boolean){
         if(poly && map.polygons.head) this.renderPolygon2dFromBuffer(map.polygons, map.styleTable.polygon, viewMatrix);
@@ -99,7 +102,7 @@ export class mapRenderer {
         let styleScalar = this.getTransitionScalar(viewMatrix);
 
         this.gl.uniform1f(this.polyProgam.uniformLocations.get("STYLESCALAR"), styleScalar);
-        this.gl.uniform1f(this.polyProgam.uniformLocations.get("ZOOMLEVEL"), viewMatrix[0]);
+        this.gl.uniform1f(this.polyProgam.uniformLocations.get("ZOOMLEVEL"), this.getZoomLevel(viewMatrix));
         this.gl.uniform1f(this.polyProgam.uniformLocations.get("RENDERHEIGHT"), this.gl.canvas.height);
         this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE1"), styleTable[0]);
         this.gl.uniform4fv(this.polyProgam.uniformLocations.get("STYLETABLE2"), styleTable[1]);
@@ -145,7 +148,7 @@ export class mapRenderer {
 
         let styleScalar = this.getTransitionScalar(viewMatrix);
         this.gl.uniform1f(this.outlineProgram.uniformLocations.get("STYLESCALAR"), styleScalar);
-        this.gl.uniform1f(this.outlineProgram.uniformLocations.get("ZOOMLEVEL"), viewMatrix[0])
+        this.gl.uniform1f(this.outlineProgram.uniformLocations.get("ZOOMLEVEL"), this.getZoomLevel(viewMatrix))
         this.gl.uniform1f(this.outlineProgram.uniformLocations.get("RENDERHEIGHT"), this.gl.canvas.height);
         this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE1"), styleTable[0]);
         this.gl.uniform4fv(this.outlineProgram.uniformLocations.get("STYLETABLE2"), styleTable[1]);
