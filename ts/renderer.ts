@@ -2,6 +2,7 @@ import * as shaders from "./shaders.json"
 import { camera } from "./camera"
 import { GPUBufferSet } from "./memory";
 import { mapLayer } from "./map";
+import { mat3 } from "gl-matrix"
 
 class ShaderProgram {
     program: WebGLProgram;
@@ -39,14 +40,14 @@ export class mapRenderer {
     setTransitionBoundry(min: number, max: number){
         this.styleTransitionBoundry = {min, max};
     }
-    private getTransitionScalar(viewMatrix: Float32Array){
+    private getTransitionScalar(viewMatrix: mat3){
         return Math.min(Math.max((viewMatrix[4]-this.styleTransitionBoundry.min)/(this.styleTransitionBoundry.max - this.styleTransitionBoundry.min),0),1);
     }
-    renderMap(map: mapLayer, viewMatrix: Float32Array, poly: boolean, outline: boolean){
+    renderMap(map: mapLayer, viewMatrix: mat3, poly: boolean, outline: boolean){
         if(poly && map.polygons.head) this.renderPolygon2dFromBuffer(map.polygons, map.styleTable.polygon, viewMatrix);
         if(outline && map.polygons.head) this.renderOutline2dFromBuffer(map.outlines, map.styleTable.outline, viewMatrix);
     }
-    private renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: Float32Array): void {
+    private renderLine2d(vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, length: number, viewMatrix: mat3): void {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
@@ -71,10 +72,10 @@ export class mapRenderer {
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(this.gl.LINES, 0, length);
     }
-    private renderLine2dFromBuffer(bufferset: GPUBufferSet, viewMatrix: Float32Array): void {
+    private renderLine2dFromBuffer(bufferset: GPUBufferSet, viewMatrix: mat3): void {
         this.renderLine2d(bufferset.buffers[0].buffer, bufferset.buffers[1].buffer, bufferset.head, viewMatrix);
     }
-    private renderPolygon2d(vertexBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, styleTable: Float32Array[], viewMatrix: Float32Array, drawMode = this.gl.TRIANGLES): void {
+    private renderPolygon2d(vertexBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, styleTable: Float32Array[], viewMatrix: mat3, drawMode = this.gl.TRIANGLES): void {
         this.gl.useProgram(this.polyProgam.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.enableVertexAttribArray(this.polyProgam.attribLocations.get("vertexPosition"));
@@ -105,12 +106,12 @@ export class mapRenderer {
         this.gl.uniformMatrix3fv(this.polyProgam.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }
-    private renderPolygon2dFromBuffer(bufferSet: GPUBufferSet, styleTable: Float32Array[], viewMatrix: Float32Array): void {
+    private renderPolygon2dFromBuffer(bufferSet: GPUBufferSet, styleTable: Float32Array[], viewMatrix: mat3): void {
         bufferSet.lock();
         this.renderPolygon2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.head, styleTable, viewMatrix);
         setTimeout(()=>bufferSet.unlock(), 40000);
     }
-    private renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, styleTable: Float32Array[], viewMatrix: Float32Array){
+    private renderOutline2d(vertexBuffer: WebGLBuffer, normalBuffer: WebGLBuffer, styleBuffer: WebGLBuffer, length: number, styleTable: Float32Array[], viewMatrix: mat3){
         let drawMode = this.gl.TRIANGLE_STRIP
         this.gl.useProgram(this.outlineProgram.program);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
@@ -151,7 +152,7 @@ export class mapRenderer {
         this.gl.uniformMatrix3fv(this.outlineProgram.uniformLocations.get("VIEW"), false, viewMatrix);
         this.gl.drawArrays(drawMode, 0, length);
     }
-    private renderOutline2dFromBuffer(bufferSet: GPUBufferSet, styleTable: Float32Array[], viewMatrix: Float32Array){
+    private renderOutline2dFromBuffer(bufferSet: GPUBufferSet, styleTable: Float32Array[], viewMatrix: mat3){
         bufferSet.lock();
         this.renderOutline2d(bufferSet.buffers[0].buffer, bufferSet.buffers[1].buffer, bufferSet.buffers[2].buffer, bufferSet.head, styleTable, viewMatrix)
         setTimeout(()=>bufferSet.unlock(), 40000);

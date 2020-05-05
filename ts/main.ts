@@ -9,9 +9,8 @@ var renderer: mapRenderer;
 var canvas: HTMLCanvasElement;
 var tileMap: mapLayer;
 var featureMap: mapLayer;
+var cam: camera;
 
-var cam = { x: -1, y: -0.4, scaleX: 1, scaleY: 1 }
-var baseCam = { x: -1, y: -0.4 }
 var mouse = { startx: 0, starty: 0, x: 0, y: 0, left: false, right: false }
 var invalidated = false;
 var drawParams = { tile: true, feature: true, lines: true, polygons: true }
@@ -29,7 +28,9 @@ function init() {
         window.alert("this browser does not support webgl 2, try firefox")
     }
     document.body.appendChild(canvas);
+    cam = new camera();
     sizeCanvas();
+    //cam.zoom(0.001, 0, 0);
     mouse.x = canvas.width/2;
     mouse.y = canvas.height/2;
     mouse.startx = canvas.width/2;
@@ -61,7 +62,7 @@ export function setHoveredElement(id: string) {
 function sizeCanvas() {
     canvas.width = canvas.getBoundingClientRect().width;
     canvas.height = canvas.getBoundingClientRect().height;
-    camera.setAespectRatio(canvas.width, canvas.height);
+    cam.setAespectRatio(canvas.width, canvas.height);
     gl.viewport(0, 0, canvas.width, canvas.height);
     invalidate();
 }
@@ -78,7 +79,7 @@ function manageSidebar() {
     let lowerBound = state.lower = Math.exp(parseFloat(lower));
     let upperBound = state.upper = Math.exp(parseFloat(upper));
     renderer.setTransitionBoundry(lowerBound, upperBound);
-    document.getElementById("ZoomLevel").innerHTML = Math.log(cam.scaleX).toFixed(1) as any;
+    document.getElementById("ZoomLevel").innerHTML = Math.log(cam.getZoom()).toFixed(1) as any;
     state.lines = drawParams.lines = (document.getElementById("lines") as any).checked;
     state.polygons = drawParams.polygons = (document.getElementById("polygons") as any).checked;
     state.feature = drawParams.feature = (document.getElementById("feature") as any).checked;
@@ -93,24 +94,16 @@ function manageSidebar() {
 
 function loop() {
     manageSidebar();
-    let deltaZoom = (targetZoom - zoom) * 0.1
-    zoom = zoom + deltaZoom;
-    let center = camera.toWorldSpace(mouse.x, mouse.y, cam, canvas);
-    center.x = -center.x;
-    center.y = -center.y;
-    cam.x = cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
-    cam.y = cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
-    //baseCam.x = cam.x * (1-deltaZoom/zoom) + center.x * (deltaZoom/zoom);
-    //baseCam.y = cam.y * (1-deltaZoom/zoom) + center.y * (deltaZoom/zoom);
-    if(Math.abs(zoom - targetZoom) > 0.01){
+    let deltaZoom = Math.log(targetZoom/zoom) * 0.1;
+    zoom = zoom * Math.exp(deltaZoom);
+    if(Math.abs(deltaZoom) > 0.001){
+        cam.zoom(Math.exp(deltaZoom), mouse.x, mouse.y)
         invalidate()
     }
-    cam.scaleX = zoom;
-    cam.scaleY = zoom;
     if(invalidated){
         renderer.clear();
-        if(drawParams.tile) renderer.renderMap(tileMap, camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.polygons, drawParams.lines);
-        if(drawParams.feature) renderer.renderMap(featureMap, camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY), drawParams.polygons, drawParams.lines);
+        if(drawParams.tile) renderer.renderMap(tileMap, cam.view, drawParams.polygons, drawParams.lines);
+        if(drawParams.feature) renderer.renderMap(featureMap, cam.view, drawParams.polygons, drawParams.lines);
         invalidated = false;
     }
     requestAnimationFrame(loop);
@@ -137,11 +130,10 @@ function mouseMove(pointer: {offsetX: number, offsetY: number}){
     mouse.x = pointer.offsetX;
     mouse.y = pointer.offsetY;
     if (mouse.left) {
-        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleY;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleX;
+        cam.touchMove(pointer.offsetX, pointer.offsetY);
         invalidate();
     }
-    let adjustedPointer = camera.toWorldSpace(pointer.offsetX, pointer.offsetY, cam, canvas);
+    let adjustedPointer = cam.toWorldSpace(pointer.offsetX, pointer.offsetY);
     if (paintMode) {
         let time1 = performance.now();
         let selection = tileMap.selectRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
@@ -171,19 +163,16 @@ function mouseMove(pointer: {offsetX: number, offsetY: number}){
 
 function mouseDown(pointer: {offsetX: number, offsetY: number, button: number}){
     if (pointer.button === 0) {
+        cam.touchDown(pointer.offsetX, pointer.offsetY)
         mouse.left = true;
         mouse.x = pointer.offsetX;
         mouse.y = pointer.offsetY;
         mouse.startx = pointer.offsetX;
         mouse.starty = pointer.offsetY;
-        baseCam.x = cam.x;
-        baseCam.y = cam.y;  
-        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleX;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleY;
     } else if (pointer.button === 2) {
         mouse.right = true;
         let start = performance.now();
-        let adjustedPointer = camera.toWorldSpace(pointer.offsetX, pointer.offsetY, cam, canvas);
+        let adjustedPointer = cam.toWorldSpace(pointer.offsetX, pointer.offsetY);
         let featureSelection = featureMap.select(adjustedPointer.x, adjustedPointer.y);
         if(featureSelection){
             featureMap.setStyle(featureSelection, 1);
@@ -194,7 +183,7 @@ function mouseDown(pointer: {offsetX: number, offsetY: number, button: number}){
         invalidate();
     } else {
         let start = performance.now()
-        let adjustedPointer = camera.toWorldSpace(pointer.offsetX, pointer.offsetY, cam, canvas);
+        let adjustedPointer = cam.toWorldSpace(pointer.offsetX, pointer.offsetY);
         tileMap.remove(adjustedPointer.x, adjustedPointer.y);
         console.log(`selecting and removing 1 feature took ${performance.now()-start} ms`);
         invalidate();
@@ -204,8 +193,6 @@ function mouseDown(pointer: {offsetX: number, offsetY: number, button: number}){
 function mouseUp(pointer: {offsetX: number, offsetY: number, button: number}){
     if (pointer.button === 0) {
         mouse.left = false;
-        baseCam = { x: cam.x, y: cam.y }
-        window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
     } 
     if (pointer.button === 2) {
         mouse.right = false;
@@ -231,38 +218,106 @@ canvas.addEventListener("pointerup", mouseUp)
 
 canvas.addEventListener("pointermove", mouseMove)
 
+
+let pinchDistance: number;
+let touch1: Touch;
+let touch2: Touch;
 canvas.addEventListener("touchstart", event=>{
     event.preventDefault();
-    if(event.touches.length == 1){
-        mouseDown({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
+    let t1ID = null;
+    let t2ID = null;
+    if(touch1){
+        t1ID = touch1.identifier;
     }
-    if(event.touches.length == 2){
-        alert("asdf")
-        drawParams.polygons = false;
+    if(touch2){
+        t2ID = touch2.identifier;
+    }
+    touch1 = undefined;
+    touch2 = undefined;
+    let newTouch;
+    for (let i = 0; i < event.touches.length; i++) {
+        const touch = event.touches[i];
+        if(touch.identifier == t1ID){
+            touch1 = touch;
+        } else if(touch.identifier == t2ID){
+            touch2 = touch;
+        } else {
+            newTouch = touch;
+        }
+    }
+    if(!touch1){
+        touch1 = newTouch;
+        mouseDown({offsetX: event.touches[0].clientX, offsetY: event.touches[0].clientY, button: 0})
+    } else if(!touch2){
+        touch2 = newTouch;
+        let x = (touch1.clientX - touch2.clientX);
+        let y = (touch1.clientY - touch2.clientY);
+        pinchDistance = Math.sqrt(x*x + y*y);
     }
 })
 canvas.addEventListener("touchmove", event=>{
-    let x = 0, y = 0;
+    let t1ID = null;
+    let t2ID = null;
+    if(touch1){
+        t1ID = touch1.identifier;
+    }
+    if(touch2){
+        t2ID = touch2.identifier;
+    }
+    touch1 = undefined;
+    touch2 = undefined;
+    let newTouch;
     for (let i = 0; i < event.touches.length; i++) {
         const touch = event.touches[i];
-        x += touch.clientX;
-        y += touch.clientY;
+        if(touch.identifier == t1ID){
+            touch1 = touch;
+        } else if(touch.identifier == t2ID){
+            touch2 = touch;
+        } else {
+            newTouch = touch;
+        }
     }
-    x /= event.touches.length;
-    y /= event.touches.length;
-    mouseMove({offsetX: x, offsetY: y})
+    if(touch1 && touch2){
+        let x = (touch1.clientX - touch2.clientX);
+        let y = (touch1.clientY - touch2.clientY);
+        let newDistance = Math.sqrt(x*x + y*y);
+        mouseScroll({deltaY: Math.log(pinchDistance/newDistance) * 100})
+        pinchDistance = newDistance;
+    }
+    if(touch1){
+        let x = touch1.clientX;
+        let y = touch1.clientY;
+        mouseMove({offsetX: x, offsetY: y})
+    }
 })
 canvas.addEventListener("touchend", event=>{
-    let x = 0, y = 0;
+    let t1ID;
+    let t2ID;
+    if(touch1){
+        t1ID = touch1.identifier;
+    }
+    if(touch2){
+        t2ID = touch2.identifier;
+    }
+    touch1 = undefined;
+    touch2 = undefined;
     for (let i = 0; i < event.touches.length; i++) {
         const touch = event.touches[i];
-        x += touch.clientX;
-        y += touch.clientY;
+        if(touch.identifier == t1ID){
+            touch1 = touch;
+        }
+        if(touch.identifier == t2ID){
+            touch2 = touch;
+        }
     }
-    x /= event.touches.length;
-    y /= event.touches.length;
-    if(event.touches.length == 1){
-        mouseUp({offsetX: x, offsetY: y, button: 0})
+    if(touch1){
+
+    } else if(touch2){
+        mouseUp({offsetX: mouse.x, offsetY: mouse.y, button: 0})
+        mouseDown({offsetX: touch2.clientX, offsetY: touch2.clientY, button: 0})
+        touch1 = touch2;
+    } else {
+        mouseUp({offsetX: mouse.x, offsetY: mouse.y, button: 0})
     }
 });
 

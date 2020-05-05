@@ -1,13 +1,16 @@
-export declare class camera extends Float32Array {
-    static getView(x: number, y: number, scaleX: number, scaleY: number): Float32Array;
-    static setAespectRatio(width: number, height: number): void;
-    static toWorldSpace(x: number, y: number, cam: {
-        x: number;
-        y: number;
-        scaleX: number;
-        scaleY: number;
-    }, canvas: HTMLCanvasElement): {
+import * as matrix from "gl-matrix";
+export declare class camera {
+    view: matrix.mat3;
+    private canvasView;
+    private lastpoint;
+    constructor(width?: number, height?: number);
+    touchDown(x: number, y: number): void;
+    touchMove(x: number, y: number): void;
+    zoom(scalar: number, x?: number, y?: number): void;
+    setAespectRatio(width: number, height: number): void;
+    toWorldSpace(x: number, y: number): {
         x: number;
         y: number;
     };
+    getZoom(): number;
 }

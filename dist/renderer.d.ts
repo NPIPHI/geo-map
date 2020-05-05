@@ -1,4 +1,5 @@
 import { mapLayer } from "./map";
+import { mat3 } from "gl-matrix";
 export declare class mapRenderer {
     private gl;
     private polyProgam;
@@ -8,7 +9,7 @@ export declare class mapRenderer {
     constructor(gl: WebGL2RenderingContext);
     setTransitionBoundry(min: number, max: number): void;
     private getTransitionScalar;
-    renderMap(map: mapLayer, viewMatrix: Float32Array, poly: boolean, outline: boolean): void;
+    renderMap(map: mapLayer, viewMatrix: mat3, poly: boolean, outline: boolean): void;
     private renderLine2d;
     private renderLine2dFromBuffer;
     private renderPolygon2d;
