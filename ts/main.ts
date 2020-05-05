@@ -11,12 +11,13 @@ var tileMap: mapLayer;
 var featureMap: mapLayer;
 var cam: camera;
 
-var mouse = { startx: 0, starty: 0, x: 0, y: 0, left: false, right: false }
+var mouse = {x: 0, y: 0, left: false, right: false }
 var invalidated = false;
 var drawParams = { tile: true, feature: true, lines: true, polygons: true }
 var paintMode = false;
 var sprayMode = false;
 var featureInfoTracker = {addedIndex: 0, totalCount: 0, displayedCount: 0}
+var sideBarElements: any;
 
 let zoom = 1;
 let targetZoom = 1;
@@ -33,8 +34,6 @@ function init() {
     //cam.zoom(0.001, 0, 0);
     mouse.x = canvas.width/2;
     mouse.y = canvas.height/2;
-    mouse.startx = canvas.width/2;
-    mouse.starty = canvas.height/2;
     console.log(performance.now())
     tileMap = loadMapChuncksBinary("./binaryChuncks");
     //tileMap = loadMapChuncks("./chuncks")
@@ -68,24 +67,36 @@ function sizeCanvas() {
 }
 
 let lastState: any = {};
+function attachSidebar(){
+    sideBarElements = {};
+    sideBarElements.lower = document.getElementById("lower");
+    sideBarElements.upper = document.getElementById("upper");
+    sideBarElements.zoom = document.getElementById("ZoomLevel");
+    sideBarElements.lines = document.getElementById("lines");
+    sideBarElements.polygons = document.getElementById("polygons");
+    sideBarElements.feature = document.getElementById("feature");
+    sideBarElements.tile = document.getElementById("tile");
+    sideBarElements.paint = document.getElementById("paint");
+    sideBarElements.spray = document.getElementById("spray");
+}
 function manageSidebar() {
     if(featureInfoTracker.displayedCount != featureInfoTracker.totalCount){
         document.getElementById("TileNumber").innerHTML = featureInfoTracker.totalCount as any;
         featureInfoTracker.displayedCount = featureInfoTracker.totalCount;
     }
     let state: any = {};
-    let lower = (document.getElementById("lower") as HTMLInputElement).value;
-    let upper = (document.getElementById("upper") as HTMLInputElement).value;
+    let lower = sideBarElements.lower.value;
+    let upper = sideBarElements.upper.value;
     let lowerBound = state.lower = Math.exp(parseFloat(lower));
     let upperBound = state.upper = Math.exp(parseFloat(upper));
     renderer.setTransitionBoundry(lowerBound, upperBound);
-    document.getElementById("ZoomLevel").innerHTML = Math.log(cam.getZoom()).toFixed(1) as any;
-    state.lines = drawParams.lines = (document.getElementById("lines") as any).checked;
-    state.polygons = drawParams.polygons = (document.getElementById("polygons") as any).checked;
-    state.feature = drawParams.feature = (document.getElementById("feature") as any).checked;
-    state.tile = drawParams.tile = (document.getElementById("tile") as any).checked;
-    paintMode = (document.getElementById("paint") as any).checked;
-    sprayMode = (document.getElementById("spray") as any).checked;
+    sideBarElements.zoom.innerHTML = Math.log(cam.getZoom()).toFixed(1);
+    state.lines = drawParams.lines = sideBarElements.lines.checked;
+    state.polygons = drawParams.polygons = sideBarElements.polygons.checked;
+    state.feature = drawParams.feature = sideBarElements.feature.checked;
+    state.tile = drawParams.tile = sideBarElements.tile.checked;
+    paintMode = sideBarElements.paint.checked;
+    sprayMode = sideBarElements.spray.checked;
     if (lastState.lower != state.lower || lastState.upper != state.upper || lastState.lines != state.lines || lastState.polygons != state.polygons || lastState.tile != state.tile || lastState.feature != state.feature) {
         lastState = state;
         invalidate();
@@ -93,6 +104,7 @@ function manageSidebar() {
 }
 
 function loop() {
+    attachSidebar();
     manageSidebar();
     let deltaZoom = Math.log(targetZoom/zoom) * 0.1;
     zoom = zoom * Math.exp(deltaZoom);
@@ -167,8 +179,6 @@ function mouseDown(pointer: {x: number, y: number, button: number}){
         mouse.left = true;
         mouse.x = pointer.x;
         mouse.y = pointer.y;
-        mouse.startx = pointer.x;
-        mouse.starty = pointer.y;
     } else if (pointer.button === 2) {
         mouse.right = true;
         let start = performance.now();

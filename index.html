@@ -1,33 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Document</title>
 </head>
+
 <body>
     <style>
         * {
             padding: 0;
             margin: 0;
-        overflow: hidden;
         }
+
         body {
             background-color: #111;
             display: grid;
             grid-template-columns: 4fr 1fr;
         }
+
         canvas {
             width: 100%;
             height: 100vh;
         }
+
         div {
             color: #bbb;
-            margin: 10px;
+            margin: 0px 10px;
+        }
+        #Sidebar {
+            overflow-y: auto;
+            height: 100vh
         }
     </style>
     <script src="dist/app.js"></script>
-    <div style="overflow: initial">
+    <div id="Sidebar">
         <h1>GeoMap</h1>
         <div>
             Navigate by dragging, scroll to zoom
@@ -46,9 +54,10 @@
             Styling is done by a lookup into a style table, there can be as many diffent styles as needed
         </div>
         <div id="ZoomStyle">
-            Feature style can be interpolated by zoom level. Styling includes color, line thickness, and potentialy more.
+            Feature style can be interpolated by zoom level. Styling includes color, line thickness, and potentialy
+            more.
             <br>
-            Set the parameters here: 
+            Set the parameters here:
             <span>
                 <div>Lower bound <input id="lower" type="number" value="1"></div>
                 <div>Upper bound <input id="upper" type="number" value="4"></div>
@@ -77,5 +86,7 @@
             Check the console for various performance data
         </div>
     </div>
+
 </body>
+
 </html>
