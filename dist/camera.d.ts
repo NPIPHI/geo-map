@@ -1,11 +1,14 @@
 import * as matrix from "gl-matrix";
 export declare class camera {
-    view: matrix.mat3;
+    private _view;
     private canvasView;
+    private aespectRatioView;
+    private aespectRatioInverse;
     private inverseView;
     private onePointTouchLocation;
     private twoPointTouchLocations;
     constructor(width?: number, height?: number);
+    get view(): matrix.mat3;
     onePointDown(x: number, y: number): void;
     onePointMove(x: number, y: number): void;
     zoom(scalar: number, x?: number, y?: number): void;
