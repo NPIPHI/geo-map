@@ -3,6 +3,7 @@ import pointInPolygon from "point-in-polygon"
 export interface spatialElement {
     bBox: boundingBox;
     shape: Float32Array;
+    
 }
 
 export class boundingBox {
@@ -39,27 +40,15 @@ export class boundingBox {
     }
 }
 
-class KDHeep {
-    constructor(elements: spatialElement[], bBox: boundingBox, depth: number = 1) {
-
-    }
-}
-
-export class KDTree {
-    topNode: KDNode;
-    outsideElements: spatialElement[];
-    constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 10) {
-        this.topNode = new KDNode(elements, bBox, recursiveDepth, true);
+export class BinarySpaceTree<T extends spatialElement> {
+    topNode: BinarySpaceNode<T>;
+    outsideElements: T[];
+    constructor(bBox: boundingBox, recursiveDepth: number = 10) {
+        this.topNode = new BinarySpaceNode([], bBox, recursiveDepth, true);
         this.outsideElements = [];
     }
-    static async buildAsync(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number = 10): Promise<KDTree> {
-        return new Promise((resolve, reject) => {
-            let tree = new KDTree(elements, bBox, recursiveDepth)
-            resolve(tree);
-        })
-    }
-    find(x: number, y: number): spatialElement[] {
-        let returnList: spatialElement[] = []
+    find(x: number, y: number): T[] {
+        let returnList: T[] = []
         if(this.topNode.bBox.contains(x, y)){
             this.topNode.find(x, y, returnList);
         } else {
@@ -67,15 +56,15 @@ export class KDTree {
         }
         return returnList;
     }
-    findFirst(x: number, y: number): spatialElement {
+    findFirst(x: number, y: number): T {
         if(this.topNode.bBox.contains(x, y)){
             return this.topNode.findFirst(x, y);
         } else {
             return this.outsideElements.find(ele=>ele.bBox.contains(x, y));
         }
     }
-    findSelection(bBox: boundingBox): spatialElement[] {
-        let returnList: spatialElement[] = []
+    findSelection(bBox: boundingBox): T[] {
+        let returnList: T[] = []
         if(this.topNode.bBox.intesects(bBox)){
             this.topNode.findSelection(bBox, returnList);
         } else {
@@ -83,7 +72,7 @@ export class KDTree {
         }
         return returnList;
     }
-    popFirst(x: number, y: number): spatialElement {
+    popFirst(x: number, y: number): T {
         if(this.topNode.bBox.contains(x, y)){
             return this.topNode.popFirst(x, y);
         } else {
@@ -95,7 +84,7 @@ export class KDTree {
         }
         return undefined;
     }
-    insert(element: spatialElement){
+    insert(element: T){
         if(this.topNode.bBox.intesects(element.bBox)){
             this.topNode.insert(element);
         } else {
@@ -104,18 +93,18 @@ export class KDTree {
     }
 }
 
-class KDNode {
-    node1: KDNode;
-    node2: KDNode;
+class BinarySpaceNode<T extends spatialElement> {
+    node1: BinarySpaceNode<T>;
+    node2: BinarySpaceNode<T>;
     bBox: boundingBox;
-    elements: spatialElement[];
-    constructor(elements: spatialElement[], bBox: boundingBox, recursiveDepth: number, splitDirection: boolean) {
+    elements: T[];
+    constructor(elements: T[], bBox: boundingBox, recursiveDepth: number, splitDirection: boolean) {
         this.bBox = bBox;
         if (recursiveDepth !== 0) {
             let node1Box: boundingBox;
             let node2Box: boundingBox;
-            let node1Elements: spatialElement[] = [];
-            let node2Elements: spatialElement[] = [];
+            let node1Elements: T[] = [];
+            let node2Elements: T[] = [];
             this.elements = [];
             if (splitDirection) {
                 node1Box = new boundingBox(bBox.x1, bBox.y1, (bBox.x2 + bBox.x1) / 2, bBox.y2);
@@ -137,13 +126,13 @@ class KDNode {
                     throw ("element was not in bounding box")
                 }
             })
-            this.node1 = new KDNode(node1Elements, node1Box, recursiveDepth - 1, !splitDirection);
-            this.node2 = new KDNode(node2Elements, node2Box, recursiveDepth - 1, !splitDirection);
+            this.node1 = new BinarySpaceNode(node1Elements, node1Box, recursiveDepth - 1, !splitDirection);
+            this.node2 = new BinarySpaceNode(node2Elements, node2Box, recursiveDepth - 1, !splitDirection);
         } else {
             this.elements = elements;
         }
     }
-    insert(element: spatialElement) {
+    insert(element: T) {
         let inNode1 = !!this.node1 && element.bBox.intesects(this.node1.bBox);
         let inNode2 = !!this.node2 && element.bBox.intesects(this.node2.bBox);
         if (inNode1 && inNode2) {
@@ -156,7 +145,7 @@ class KDNode {
             this.elements.push(element); //this leaves are undefined
         }
     }
-    find(x: number, y: number, returnList: spatialElement[]) {
+    find(x: number, y: number, returnList: T[]) {
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.contains(x, y)) {
                 if (this.inShape(this.elements[i].shape, x, y)) {
@@ -171,7 +160,7 @@ class KDNode {
             this.node2.find(x, y, returnList)
         }
     }
-    findFirst(x: number, y: number): spatialElement{
+    findFirst(x: number, y: number): T{
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.contains(x, y)) {
                 if (this.inShape(this.elements[i].shape, x, y)) {
@@ -179,7 +168,7 @@ class KDNode {
                 }
             }
         }
-        let found: spatialElement;
+        let found: T;
         if (this.node1 && this.node1.bBox.contains(x, y)) {
             found = this.node1.findFirst(x, y)
             if(found) return found;
@@ -190,7 +179,7 @@ class KDNode {
         }
         return undefined;
     }
-    findSelection(bBox: boundingBox, returnList: spatialElement[]){
+    findSelection(bBox: boundingBox, returnList: T[]){
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.intesects(bBox)) {
                 returnList.push(this.elements[i]);
@@ -203,7 +192,7 @@ class KDNode {
             this.node2.findSelection(bBox, returnList)
         }
     }
-    popFirst(x: number, y: number): spatialElement | undefined {
+    popFirst(x: number, y: number): T | undefined {
         for (let i = 0; i < this.elements.length; i++) {
             if (this.elements[i].bBox.contains(x, y)) {
                 if(this.inShape(this.elements[i].shape, x, y)){

@@ -37,7 +37,7 @@ function init() {
     console.log(performance.now())
     tileMap = loadMapChuncksBinary("./binaryChuncks");
     //tileMap = loadMapChuncks("./chuncks")
-    featureMap = new mapLayer([], []);
+    featureMap = new mapLayer();
     renderer = new mapRenderer(gl);
     tileMap.setStyleTableFromArray("polygon", [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.9, 1, 0.8, 0.8, 0.8, 1, 0.9, 0.9, 0.9, 1], [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.5, 0.5, 1]);
     tileMap.setStyleTableFromArray("outline", [0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8, 0, 0, 0.6, 2, 0, 0, 0.6, 2], [0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0,  1, 0, 0, 0, 1, 0, 0, 0]);
@@ -130,7 +130,7 @@ function sprayFeatures(x: number, y: number, radius: number, scale: number, coun
             featureOutline[i] = featureOutline[i] * scale + x + Math.cos(theta) * offset;
             featureOutline[i+1] = featureOutline[i+1] * scale + y + Math.sin(theta) * offset;
         }
-        let subTile = tileMap.select(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset)
+        let subTile = tileMap.selectByPoint(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset)
         if(subTile){
             tileMap.setStyle(subTile, 3);
         }
@@ -148,7 +148,7 @@ function mouseMove(pointer: {x: number, y: number}){
     let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
     if (paintMode) {
         let time1 = performance.now();
-        let selection = tileMap.selectRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
+        let selection = tileMap.selectByRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
         selection.forEach(ele => {
             tileMap.setStyle(ele, 2);
         })
@@ -160,11 +160,11 @@ function mouseMove(pointer: {x: number, y: number}){
         sprayFeatures(adjustedPointer.x, adjustedPointer.y, 0.01, 0.001 * (Math.random() + 0.1), 1);
         invalidate();
     }
-    let selected = featureMap.select(adjustedPointer.x, adjustedPointer.y);
+    let selected = featureMap.selectByPoint(adjustedPointer.x, adjustedPointer.y);
     if (selected) {
         setHoveredElement(selected.id);
     } else {
-        selected = tileMap.select(adjustedPointer.x, adjustedPointer.y)
+        selected = tileMap.selectByPoint(adjustedPointer.x, adjustedPointer.y)
         if (selected) {
             setHoveredElement(selected.id);
         } else {
@@ -183,11 +183,11 @@ function mouseDown(pointer: {x: number, y: number, button: number}){
         mouse.right = true;
         let start = performance.now();
         let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
-        let featureSelection = featureMap.select(adjustedPointer.x, adjustedPointer.y);
+        let featureSelection = featureMap.selectByPoint(adjustedPointer.x, adjustedPointer.y);
         if(featureSelection){
             featureMap.setStyle(featureSelection, 1);
         } else {
-            tileMap.setStyle(tileMap.select(adjustedPointer.x, adjustedPointer.y), 2);
+            tileMap.setStyle(tileMap.selectByPoint(adjustedPointer.x, adjustedPointer.y), 2);
         }
         console.log(`selecting and styling 1 feature took ${performance.now()-start} ms`);
         invalidate();

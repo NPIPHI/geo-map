@@ -19,7 +19,7 @@ export async function loadMapBinary(): Promise<{ points: Float32Array[], ids: st
 }
 
 export function loadMapChuncksBinary(dir: string): mapLayer {
-    let geoMap = new mapLayer([], []);
+    let geoMap = new mapLayer();
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
             addMapBinary(dir + "/" + i, geoMap);
@@ -117,7 +117,7 @@ async function parseMapJson(path: string = "../mapData/slabs.json"): Promise<{ p
 }
 
 export function loadMapChuncks(dir: string): mapLayer {
-    let geoMap = new mapLayer([], []);
+    let geoMap = new mapLayer();
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
             addMapJson(dir + "/" + i + ".json", geoMap);

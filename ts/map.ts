@@ -1,28 +1,21 @@
 import { Feature } from "./feature";
 import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
 import { bufferConstructor } from "./bufferConstructor";
-import { KDTree, boundingBox } from "./kdTree"
+import { BinarySpaceTree, boundingBox } from "./kdTree"
 import { incrementFeatureNumberDisplay } from "./main"
 
 export class mapLayer {
-    private featureTree: KDTree;
+    private featureTree: BinarySpaceTree<Feature>;
+    zIndex = 0;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     styleTable: { polygon: Float32Array[], outline: Float32Array[] };
 
-    constructor(pointStrips: Float32Array[], ids: string[]) {
-        let outlineData = bufferConstructor.outlineBuffer(pointStrips);
-        let polygonData = bufferConstructor.polygonBuffer(pointStrips);
-        this.outlines = outlineData.buffer;
-        this.polygons = polygonData.buffer;
-        let features: Feature[] = [];
-        for (let i = 0; i < pointStrips.length; i++) {
-            features.push(new Feature(pointStrips[i], ids[i],
-                new GPUMemoryPointer(outlineData.features.offsets[i], outlineData.features.widths[i]),
-                new GPUMemoryPointer(polygonData.features.offsets[i], polygonData.features.widths[i])));
-        }
+    constructor() {
+        this.outlines = GPUBufferSet.create([2*4, 2*4, 1*4]);
+        this.polygons = GPUBufferSet.create([2*4, 1*4]);
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] }
-        this.featureTree = new KDTree([], new boundingBox(0, 0, 4, 4));
+        this.featureTree = new BinarySpaceTree( new boundingBox(0, 0, 4, 4));
     }
     addFeatures(pointStrips: Float32Array[], ids: string[]) {
         incrementFeatureNumberDisplay(pointStrips.length);
@@ -41,11 +34,14 @@ export class mapLayer {
         this.polygons.add(feature.polygon as GPUMemoryObject);
         this.featureTree.insert(feature);
     }
-    select(x: number, y: number): Feature | undefined {
+    selectByPoint(x: number, y: number): Feature | undefined {
         return this.featureTree.findFirst(x, y) as Feature;
     }
-    selectRectangle(bBox: boundingBox): Feature[] {
-        return this.featureTree.findSelection(bBox) as Feature[];
+    selectByRectangle(bBox: boundingBox): Feature[] {
+        return this.featureTree.findSelection(bBox);
+    }
+    selectByID(id: string){
+
     }
     remove(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
