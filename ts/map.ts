@@ -11,11 +11,12 @@ export class mapLayer {
     polygons: GPUBufferSet;
     styleTable: { polygon: Float32Array[], outline: Float32Array[] };
 
-    constructor() {
+    constructor(zIndex = 0) {
+        this.zIndex = zIndex;
         this.outlines = GPUBufferSet.create([2*4, 2*4, 1*4]);
         this.polygons = GPUBufferSet.create([2*4, 1*4]);
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] }
-        this.featureTree = new BinarySpaceTree( new boundingBox(0, 0, 4, 4));
+        this.featureTree = new BinarySpaceTree(new boundingBox(0, 0, 4, 4));
     }
     addFeatures(pointStrips: Float32Array[], ids: string[]) {
         incrementFeatureNumberDisplay(pointStrips.length);
@@ -40,10 +41,13 @@ export class mapLayer {
     selectByRectangle(bBox: boundingBox): Feature[] {
         return this.featureTree.findSelection(bBox);
     }
-    selectByID(id: string){
-
+    selectByID(id: string): Feature {
+        return this.featureTree.findID(id);
     }
-    remove(x: number, y: number): void {
+    remove(feature: Feature): void {
+        this.featureTree.remove(feature);
+    }
+    popByPoint(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
         if (removed) {
             incrementFeatureNumberDisplay(-1);

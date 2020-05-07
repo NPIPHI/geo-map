@@ -43,7 +43,8 @@ function init() {
     tileMap.setStyleTableFromArray("outline", [0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8, 0, 0, 0.6, 2, 0, 0, 0.6, 2], [0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0,  1, 0, 0, 0, 1, 0, 0, 0]);
     featureMap.setStyleTableFromArray("polygon", [1, 0.5, 0.5, 1, 0, 0, 1, 1], [1, 0.5, 0.5, 0, 1, 1, 1, 0])
     featureMap.setStyleTableFromArray("outline", [1, 0, 0, 4, 0, 1, 0, 4], [1, 0, 0, 0, 1, 1, 1, 0])
-    window.onload = loop;
+    window.addEventListener('load', attachSidebar);
+    window.addEventListener('load', loop);
 }
 
 export function invalidate() {
@@ -104,7 +105,6 @@ function manageSidebar() {
 }
 
 function loop() {
-    attachSidebar();
     manageSidebar();
     let deltaZoom = Math.log(targetZoom/zoom) * 0.1;
     zoom = zoom * Math.exp(deltaZoom);
@@ -194,7 +194,7 @@ function mouseDown(pointer: {x: number, y: number, button: number}){
     } else {
         let start = performance.now()
         let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
-        tileMap.remove(adjustedPointer.x, adjustedPointer.y);
+        tileMap.popByPoint(adjustedPointer.x, adjustedPointer.y);
         console.log(`selecting and removing 1 feature took ${performance.now()-start} ms`);
         invalidate();
     }

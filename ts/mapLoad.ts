@@ -49,7 +49,7 @@ async function parseMapBinary(path: string): Promise<{points: Float32Array[], id
                 let path = new Float32Array(indices[i + 1] * 2)
                 for (let j = 0; j < indices[i + 1]; j++) {
                     path[j * 2] = points[indices[i] * 2 + j * 2] * resizeRatio;
-                    path[j * 2 + 1] = points[indices[i] * 2 + j * 2 + 1]
+                    path[j * 2 + 1] = points[indices[i] * 2 + j * 2 + 1];
                 }
                 pointPaths.push(path);
             }
