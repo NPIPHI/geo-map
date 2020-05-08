@@ -26,6 +26,7 @@ class GeoMap {
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor_1.bufferConstructor(this.squareRegion);
         this.inputHandler = new inputHandler_1.inputHandler(canvas, this.camera, this.render);
+        this.layers = [];
     }
     render() {
         this.layers.sort((a, b) => a.zIndex - b.zIndex);
