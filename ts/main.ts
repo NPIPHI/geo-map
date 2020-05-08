@@ -35,7 +35,7 @@ function init() {
     mouse.x = canvas.width/2;
     mouse.y = canvas.height/2;
     console.log(performance.now())
-    tileMap = loadMapChuncksBinary("./binaryChuncks");
+    tileMap = loadMapChuncksBinary("./binaryChuncks") as mapLayer;
     //tileMap = loadMapChuncks("./chuncks")
     featureMap = new mapLayer();
     renderer = new mapRenderer(gl);

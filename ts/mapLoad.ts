@@ -1,5 +1,6 @@
-import { mapLayer } from "./map"
-import { invalidate } from "./main"
+import { mapLayer } from "./map";
+import { invalidate } from "./main";
+import { Layer } from "./index";
 
 const bbox = { minx: 6429499.583465844, miny: 1797629.5004901737, maxx: 6446651.559660509, maxy: 1805369.9351405054 }
 const resizeRatio = (bbox.maxx - bbox.minx) / (bbox.maxy - bbox.miny)
@@ -18,7 +19,7 @@ export async function loadMapBinary(): Promise<{ points: Float32Array[], ids: st
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksBinary(dir: string): mapLayer {
+export function loadMapChuncksBinary(dir: string): Layer {
     let geoMap = new mapLayer();
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
@@ -28,7 +29,7 @@ export function loadMapChuncksBinary(dir: string): mapLayer {
     return geoMap;
 }
 
-function addMapBinary(path: string, target: mapLayer) {
+export async function addMapBinary(path: string, target: Layer): Promise<void> {
     return new Promise(resolve => {
         parseMapBinary(path).then(mapData => {
             let time1 = performance.now();
@@ -126,7 +127,7 @@ export function loadMapChuncks(dir: string): mapLayer {
     return geoMap;
 }
 
-async function addMapJson(path: string, target: mapLayer): Promise<boolean> {
+export async function addMapJson(path: string, target: Layer): Promise<void> {
     return new Promise(resolve => {
         parseMapJson(path).then(mapData => {
             let time1 = performance.now();

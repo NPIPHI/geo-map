@@ -1,10 +1,11 @@
 import { Feature } from "./feature";
 import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
 import { bufferConstructor } from "./bufferConstructor";
-import { BinarySpaceTree, boundingBox } from "./kdTree"
-import { incrementFeatureNumberDisplay } from "./main"
+import { BinarySpaceTree, boundingBox } from "./kdTree";
+import { incrementFeatureNumberDisplay } from "./main";
+import { Layer } from "./index";
 
-export class mapLayer {
+export class mapLayer implements Layer{
     private featureTree: BinarySpaceTree<Feature>;
     zIndex = 0;
     outlines: GPUBufferSet;

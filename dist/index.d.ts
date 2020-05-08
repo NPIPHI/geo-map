@@ -20,6 +20,10 @@ export declare class GeoMap {
     layers: Layer[];
     private gl;
     private bBox;
-    constructor(canvas: HTMLCanvasElement);
-    addLayer(region: BoundingBox, zIndex?: number): void;
+    private renderer;
+    constructor(canvas: HTMLCanvasElement, region: BoundingBox);
+    addLayer(zIndex?: number): void;
+    addData(layer: Layer, geometry: Float32Array[], ids: string[]): void;
+    addDataJSON(layer: Layer, path: string): Promise<void>;
+    addDataBinary(layer: Layer, path: string): Promise<void>;
 }

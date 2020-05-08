@@ -1,7 +1,8 @@
 import { Feature } from "./feature";
 import { GPUBufferSet } from "./memory";
 import { boundingBox } from "./kdTree";
-export declare class mapLayer {
+import { Layer } from "./index";
+export declare class mapLayer implements Layer {
     private featureTree;
     zIndex: number;
     outlines: GPUBufferSet;
