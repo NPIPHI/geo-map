@@ -18,12 +18,15 @@ export async function loadMapBinary(): Promise<{ points: Float64Array[], ids: st
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksBinary(dir: string, target: Layer) {
-    fetch(dir + "/meta.json").then(file => file.json().then(meta => {
-        for (let i = 0; i < meta.count; i++) {
-            addMapBinary(dir + "/" + i, target);
-        }
-    }));
+export function loadMapChuncksBinary(dir: string, target: Layer): Promise<void> {
+    return new Promise(resolve=>{
+        fetch(dir + "/meta.json").then(file => file.json().then(meta => {
+            let tracker = new loadingTracker(meta.count, resolve);
+            for (let i = 0; i < meta.count; i++) {
+                addMapBinary(dir + "/" + i, target).then(tracker.increment);
+            }
+        }));
+    })
 }
 
 export async function addMapBinary(path: string, target: Layer): Promise<void> {
@@ -90,6 +93,23 @@ class binaryLoader {
     }
 }
 
+class loadingTracker{
+    callback: ()=>void;
+    total: number;
+    count: number;
+    constructor(count: number, callback: ()=>void){
+        this.callback = callback;
+        this.total = count;
+        this.count = 0;
+    }
+    increment(){
+        this.count++;
+        if(this.count === this.total){
+            this.callback();
+        }
+    }
+}
+
 async function parseMapJson(path: string = "../mapData/slabs.json"): Promise<{ points: Float64Array[], ids: string[] }> {
     let rawData = await fetch(path);
     let jsonData = await rawData.json();
@@ -110,12 +130,15 @@ async function parseMapJson(path: string = "../mapData/slabs.json"): Promise<{ p
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksJSON(dir: string, target: Layer): void {
-    fetch(dir + "/meta.json").then(file => file.json().then(meta => {
-        for (let i = 0; i < meta.count; i++) {
-            addMapJson(dir + "/" + i + ".json", target);
-        }
-    }));
+export function loadMapChuncksJSON(dir: string, target: Layer): Promise<void> {
+    return new Promise(resolve=>{
+        fetch(dir + "/meta.json").then(file => file.json().then(meta => {
+            let tracker = new loadingTracker(meta.count, resolve)
+            for (let i = 0; i < meta.count; i++) {
+                addMapJson(dir + "/" + i + ".json", target).then(tracker.increment);
+            }
+        }));
+    })
 }
 
 export async function addMapJson(path: string, target: Layer): Promise<void> {
