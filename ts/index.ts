@@ -85,16 +85,16 @@ export class GeoMap{
     }
     async loadData(layer: Layer, path: string, encoding: "binary" | "json"): Promise<void>{
         if(encoding === "binary"){
-            return addMapJson(path, layer);
+            return addMapBinary(path, layer);
         }
         if(encoding === "json"){
-            return addMapBinary(path, layer);
+            return addMapJson(path, layer);
         }
     }
 
     async loadDataChuncks(layer: Layer, dir: string, encoding: "binary" | "json"): Promise<void>{
         if(encoding === "binary"){
-            return loadMapChuncksJSON(dir, layer);
+            return loadMapChuncksBinary(dir, layer);
         }
         if(encoding === "json"){
             return loadMapChuncksBinary(dir, layer);

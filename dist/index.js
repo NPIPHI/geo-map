@@ -50,15 +50,15 @@ class GeoMap {
     }
     async loadData(layer, path, encoding) {
         if (encoding === "binary") {
-            return mapLoad_1.addMapJson(path, layer);
+            return mapLoad_1.addMapBinary(path, layer);
         }
         if (encoding === "json") {
-            return mapLoad_1.addMapBinary(path, layer);
+            return mapLoad_1.addMapJson(path, layer);
         }
     }
     async loadDataChuncks(layer, dir, encoding) {
         if (encoding === "binary") {
-            return mapLoad_1.loadMapChuncksJSON(dir, layer);
+            return mapLoad_1.loadMapChuncksBinary(dir, layer);
         }
         if (encoding === "json") {
             return mapLoad_1.loadMapChuncksBinary(dir, layer);
