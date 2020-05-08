@@ -1,6 +1,6 @@
 {
   "name": "mapdraw",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Draw map data with webgl",
   "private": true,
   "main": "dist/index.js",

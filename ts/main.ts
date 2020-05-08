@@ -1,11 +1,11 @@
 import { mapRenderer } from "./renderer"
 import { camera } from "./camera"
-import { loadMapChuncksJSON, loadMapChuncksBinary } from "./mapLoad";
+import { loadMapChuncksBinary } from "./mapLoad";
 import { mapLayer } from "./map"
 import { boundingBox } from "./kdTree";
 import { bufferConstructor } from "./bufferConstructor";
+import { gl } from "./index"
 
-export var gl: WebGL2RenderingContext;
 var renderer: mapRenderer;
 var canvas: HTMLCanvasElement;
 var tileMap: mapLayer;

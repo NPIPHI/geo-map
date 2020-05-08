@@ -1,4 +1,5 @@
 import { Feature } from "./feature";
+export declare var gl: WebGL2RenderingContext;
 export interface BoundingBox {
     x1: number;
     y1: number;

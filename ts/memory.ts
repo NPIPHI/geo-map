@@ -1,4 +1,4 @@
-import {gl} from "./main"
+import {gl} from "./index"
 
 const growthRatio = 1.1;
 const preallocatedSize = 0;

@@ -6,6 +6,8 @@ import { bufferConstructor } from "./bufferConstructor";
 import { camera } from "./camera";
 import { inputHandler } from "./inputHandler";
 
+export var gl: WebGL2RenderingContext;
+
 export interface BoundingBox {
     x1: number;
     y1: number;
@@ -53,6 +55,7 @@ export class GeoMap{
             this.squareRegion = {y1: this.bBox.y1, x1: xCenter - xOffset, y2:this.bBox.y2, x2: xCenter + xOffset};
         }
         this.gl = canvas.getContext("webgl2");
+        gl = this.gl;
         this.renderer = new mapRenderer(this.gl);
         this.camera = new camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);
