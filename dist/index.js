@@ -8,6 +8,7 @@ const camera_1 = require("./camera");
 const inputHandler_1 = require("./inputHandler");
 class GeoMap {
     constructor(canvas, region) {
+        this.layers = [];
         this.bBox = region;
         if (this.bBox.x2 - this.bBox.x1 > this.bBox.y2 - this.bBox.y1) {
             let yCenter = (this.bBox.y1 + this.bBox.y2) / 2;
@@ -26,7 +27,6 @@ class GeoMap {
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor_1.bufferConstructor(this.squareRegion);
         this.inputHandler = new inputHandler_1.inputHandler(canvas, this.camera, this.render);
-        this.layers = [];
     }
     render() {
         this.layers.sort((a, b) => a.zIndex - b.zIndex);

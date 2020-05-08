@@ -31,7 +31,7 @@ export interface Layer {
 }
 
 export class GeoMap{
-    layers: Layer[];
+    layers: Layer[] = [];
     private gl: WebGL2RenderingContext;
     private bBox: BoundingBox;
     private squareRegion: BoundingBox;
@@ -61,7 +61,6 @@ export class GeoMap{
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor(this.squareRegion);
         this.inputHandler = new inputHandler(canvas, this.camera, this.render);
-        this.layers = [];
     }
     private render(){
         this.layers.sort((a, b)=>a.zIndex - b.zIndex);
