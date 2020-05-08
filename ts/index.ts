@@ -4,6 +4,7 @@ import { mapRenderer } from "./renderer";
 import { addMapBinary, addMapJson } from "./mapLoad";
 import { bufferConstructor } from "./bufferConstructor";
 import { camera } from "./camera";
+import { inputHandler } from "./inputHandler";
 
 export interface BoundingBox {
     x1: number;
@@ -14,6 +15,7 @@ export interface BoundingBox {
 
 export interface Layer {
     zIndex: number;
+    name: string;
     addFeatures(pointStrips: Float64Array[], ids: string[]): void;
     addFeature(pointStrip: Float64Array, id: string): void;
     selectByPoint(x: number, y: number): Feature;
@@ -21,6 +23,8 @@ export interface Layer {
     selectByID(id: string): Feature;
     remove(feature: Feature): void;
     setStyle(feature: Feature, style: number): void;
+    addEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", callback: (arg0: Feature)=>void): void;
+    callEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", point: {x: number, y: number}): void;
     setStyleTable(type: "polygon" | "outline", zoomLevel: "in" | "out", styleIndex: number, r: number, g: number, b: number, thickness?: number): void;
 }
 
@@ -32,6 +36,7 @@ export class GeoMap{
     private renderer: mapRenderer;
     private camera: camera;
     private bufferConstructor: bufferConstructor;
+    private inputHandler: inputHandler;
     constructor(canvas: HTMLCanvasElement, region: BoundingBox){
         //region represents the bounding box containing the elemnts of the map
         //accurate region information improves feature selection performance (~10x)
@@ -52,9 +57,14 @@ export class GeoMap{
         this.camera = new camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor(this.squareRegion);
+        this.inputHandler = new inputHandler(canvas, this.camera);
     }
-    addLayer(zIndex: number = 0): void{
-        this.layers.push(new mapLayer(this.bBox, this.bufferConstructor, zIndex));
+    createLayer(name: string, zIndex: number = 0): Layer {
+        return new mapLayer(name, this.bBox, this.bufferConstructor, zIndex);
+    }
+    addLayer(layer: Layer): void{
+        this.layers.push(layer);
+        this.inputHandler.targets.push(layer);
     }
     async addData(layer: Layer, geometry: Float64Array[], ids: string[]): Promise<void>{
         return new Promise(resolve=>{

@@ -5,20 +5,23 @@ const camera_1 = require("./camera");
 const mapLoad_1 = require("./mapLoad");
 const map_1 = require("./map");
 const kdTree_1 = require("./kdTree");
+const bufferConstructor_1 = require("./bufferConstructor");
 var renderer;
 var canvas;
 var tileMap;
 var featureMap;
-var cam = { x: -0.5, y: -0.2, scaleX: 1, scaleY: 1 };
-var baseCam = { x: -0.5, y: -0.2 };
-var mouse = { startx: 0, starty: 0, x: 0, y: 0, left: false, right: false };
+var cam;
+var mouse = { x: 0, y: 0, left: false, right: false };
 var invalidated = false;
 var drawParams = { tile: true, feature: true, lines: true, polygons: true };
 var paintMode = false;
 var sprayMode = false;
 var featureInfoTracker = { addedIndex: 0, totalCount: 0, displayedCount: 0 };
-let zoom = 2.7;
-let targetZoom = 2.7;
+var sideBarElements;
+let zoom = 1;
+let targetZoom = 1;
+const bbox = { x1: 6429499, y1: 1797629, x2: 6446651, y2: 1805369 };
+const squareBbox = { x1: 6429499, y1: 1792923, x2: 6446651, y2: 1810075 };
 function init() {
     canvas = document.createElement("canvas");
     exports.gl = canvas.getContext("webgl2");
@@ -26,19 +29,21 @@ function init() {
         window.alert("this browser does not support webgl 2, try firefox");
     }
     document.body.appendChild(canvas);
+    cam = new camera_1.camera(squareBbox);
     sizeCanvas();
     mouse.x = canvas.width / 2;
     mouse.y = canvas.height / 2;
-    mouse.startx = canvas.width / 2;
-    mouse.starty = canvas.height / 2;
-    tileMap = mapLoad_1.loadMapChuncksBinary("./binaryChuncks");
-    featureMap = new map_1.mapLayer([], []);
+    console.log(performance.now());
+    tileMap = new map_1.mapLayer("TileMap", bbox, new bufferConstructor_1.bufferConstructor(squareBbox));
+    mapLoad_1.loadMapChuncksBinary("./binaryChuncks", tileMap);
+    featureMap = new map_1.mapLayer("FeatuerMap", bbox, new bufferConstructor_1.bufferConstructor(squareBbox));
     renderer = new renderer_1.mapRenderer(exports.gl);
     tileMap.setStyleTableFromArray("polygon", [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.9, 1, 0.8, 0.8, 0.8, 1, 0.9, 0.9, 0.9, 1], [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.5, 0.5, 1]);
     tileMap.setStyleTableFromArray("outline", [0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8, 0, 0, 0.6, 2, 0, 0, 0.6, 2], [0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
     featureMap.setStyleTableFromArray("polygon", [1, 0.5, 0.5, 1, 0, 0, 1, 1], [1, 0.5, 0.5, 0, 1, 1, 1, 0]);
     featureMap.setStyleTableFromArray("outline", [1, 0, 0, 4, 0, 1, 0, 4], [1, 0, 0, 0, 1, 1, 1, 0]);
-    window.onload = loop;
+    window.addEventListener('load', attachSidebar);
+    window.addEventListener('load', loop);
 }
 function invalidate() {
     invalidated = true;
@@ -55,29 +60,41 @@ exports.setHoveredElement = setHoveredElement;
 function sizeCanvas() {
     canvas.width = canvas.getBoundingClientRect().width;
     canvas.height = canvas.getBoundingClientRect().height;
-    camera_1.camera.setAespectRatio(canvas.width, canvas.height);
+    cam.setAespectRatio(canvas.width, canvas.height);
     exports.gl.viewport(0, 0, canvas.width, canvas.height);
     invalidate();
 }
 let lastState = {};
+function attachSidebar() {
+    sideBarElements = {};
+    sideBarElements.lower = document.getElementById("lower");
+    sideBarElements.upper = document.getElementById("upper");
+    sideBarElements.zoom = document.getElementById("ZoomLevel");
+    sideBarElements.lines = document.getElementById("lines");
+    sideBarElements.polygons = document.getElementById("polygons");
+    sideBarElements.feature = document.getElementById("feature");
+    sideBarElements.tile = document.getElementById("tile");
+    sideBarElements.paint = document.getElementById("paint");
+    sideBarElements.spray = document.getElementById("spray");
+}
 function manageSidebar() {
     if (featureInfoTracker.displayedCount != featureInfoTracker.totalCount) {
         document.getElementById("TileNumber").innerHTML = featureInfoTracker.totalCount;
         featureInfoTracker.displayedCount = featureInfoTracker.totalCount;
     }
     let state = {};
-    let lower = document.getElementById("lower").value;
-    let upper = document.getElementById("upper").value;
+    let lower = sideBarElements.lower.value;
+    let upper = sideBarElements.upper.value;
     let lowerBound = state.lower = Math.exp(parseFloat(lower));
     let upperBound = state.upper = Math.exp(parseFloat(upper));
     renderer.setTransitionBoundry(lowerBound, upperBound);
-    document.getElementById("ZoomLevel").innerHTML = Math.log(cam.scaleX).toFixed(1);
-    state.lines = drawParams.lines = document.getElementById("lines").checked;
-    state.polygons = drawParams.polygons = document.getElementById("polygons").checked;
-    state.feature = drawParams.feature = document.getElementById("feature").checked;
-    state.tile = drawParams.tile = document.getElementById("tile").checked;
-    paintMode = document.getElementById("paint").checked;
-    sprayMode = document.getElementById("spray").checked;
+    sideBarElements.zoom.innerHTML = Math.log(cam.getZoom()).toFixed(1);
+    state.lines = drawParams.lines = sideBarElements.lines.checked;
+    state.polygons = drawParams.polygons = sideBarElements.polygons.checked;
+    state.feature = drawParams.feature = sideBarElements.feature.checked;
+    state.tile = drawParams.tile = sideBarElements.tile.checked;
+    paintMode = sideBarElements.paint.checked;
+    sprayMode = sideBarElements.spray.checked;
     if (lastState.lower != state.lower || lastState.upper != state.upper || lastState.lines != state.lines || lastState.polygons != state.polygons || lastState.tile != state.tile || lastState.feature != state.feature) {
         lastState = state;
         invalidate();
@@ -85,108 +102,49 @@ function manageSidebar() {
 }
 function loop() {
     manageSidebar();
-    let deltaZoom = (targetZoom - zoom) * 0.1;
-    zoom = zoom + deltaZoom;
-    let center = camera_1.camera.toWorldSpace(mouse.x, mouse.y, cam, canvas);
-    center.x = -center.x;
-    center.y = -center.y;
-    cam.x = cam.x * (1 - deltaZoom / zoom) + center.x * (deltaZoom / zoom);
-    cam.y = cam.y * (1 - deltaZoom / zoom) + center.y * (deltaZoom / zoom);
-    if (Math.abs(zoom - targetZoom) > 0.01) {
+    let deltaZoom = Math.log(targetZoom / zoom) * 0.1;
+    zoom = zoom * Math.exp(deltaZoom);
+    if (Math.abs(deltaZoom) > 0.001) {
+        cam.zoom(Math.exp(deltaZoom), mouse.x, mouse.y);
         invalidate();
     }
-    cam.scaleX = zoom;
-    cam.scaleY = zoom;
     if (invalidated) {
         renderer.clear();
         if (drawParams.tile)
-            renderer.renderMap(tileMap, camera_1.camera.getView(cam.x, cam.y, cam.scaleY, cam.scaleY), drawParams.polygons, drawParams.lines);
+            renderer.renderMap(tileMap, cam.view, drawParams.polygons, drawParams.lines);
         if (drawParams.feature)
-            renderer.renderMap(featureMap, camera_1.camera.getView(cam.x, cam.y, cam.scaleX, cam.scaleY), drawParams.polygons, drawParams.lines);
+            renderer.renderMap(featureMap, cam.view, drawParams.polygons, drawParams.lines);
         invalidated = false;
     }
     requestAnimationFrame(loop);
 }
 function sprayFeatures(x, y, radius, scale, count = 1) {
     for (let i = 0; i < count; i++) {
-        let featureOutline = new Float32Array([0, 0, 0.5, 1, 1, 0]);
+        let featureOutline = new Float64Array([0, 0, 0.5, 1, 1, 0]);
         let theta = Math.random() * Math.PI * 2;
         let offset = Math.random() * radius;
         for (let i = 0; i < featureOutline.length; i += 2) {
             featureOutline[i] = featureOutline[i] * scale + x + Math.cos(theta) * offset;
             featureOutline[i + 1] = featureOutline[i + 1] * scale + y + Math.sin(theta) * offset;
         }
-        let subTile = tileMap.select(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset);
+        let subTile = tileMap.selectByPoint(x + Math.cos(theta) * offset, y + Math.sin(theta) * offset);
         if (subTile) {
             tileMap.setStyle(subTile, 3);
         }
         featureMap.addFeature(featureOutline, "new feature " + featureInfoTracker.addedIndex++);
     }
 }
-init();
-window.addEventListener("resize", sizeCanvas);
-canvas.addEventListener("wheel", mouse => {
-    targetZoom *= Math.pow(1.01, -mouse.deltaY);
-    invalidate();
-    window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
-});
-canvas.addEventListener("pointerdown", pointer => {
-    if (pointer.button === 0) {
-        mouse.left = true;
-        mouse.x = pointer.offsetX;
-        mouse.y = pointer.offsetY;
-        mouse.startx = pointer.offsetX;
-        mouse.starty = pointer.offsetY;
-        baseCam.x = cam.x;
-        baseCam.y = cam.y;
-        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleX;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleY;
-    }
-    else if (pointer.button === 2) {
-        mouse.right = true;
-        let start = performance.now();
-        let adjustedPointer = camera_1.camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
-        let featureSelection = featureMap.select(adjustedPointer.x, adjustedPointer.y);
-        if (featureSelection) {
-            featureMap.setStyle(featureSelection, 1);
-        }
-        else {
-            tileMap.setStyle(tileMap.select(adjustedPointer.x, adjustedPointer.y), 2);
-        }
-        console.log(`selecting and styling 1 feature took ${performance.now() - start} ms`);
-        invalidate();
-    }
-    else {
-        let start = performance.now();
-        let adjustedPointer = camera_1.camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
-        tileMap.remove(adjustedPointer.x, adjustedPointer.y);
-        console.log(`selecting and removing 1 feature took ${performance.now() - start} ms`);
-        invalidate();
-    }
-});
-canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); return false; });
-canvas.addEventListener("pointerup", pointer => {
-    if (pointer.button === 0) {
-        mouse.left = false;
-        baseCam = { x: cam.x, y: cam.y };
-        window.sessionStorage.setItem("VIEW", JSON.stringify(cam));
-    }
-    if (pointer.button === 2) {
-        mouse.right = false;
-    }
-});
-canvas.addEventListener("pointermove", pointer => {
-    mouse.x = pointer.offsetX;
-    mouse.y = pointer.offsetY;
+function mouseMove(pointer) {
+    mouse.x = pointer.x;
+    mouse.y = pointer.y;
     if (mouse.left) {
-        cam.x = baseCam.x + (pointer.offsetX - mouse.startx) * 2 / 1000 / cam.scaleY;
-        cam.y = baseCam.y - (pointer.offsetY - mouse.starty) * 2 / 1000 / cam.scaleX;
+        cam.onePointMove(pointer.x, pointer.y);
         invalidate();
     }
-    let adjustedPointer = camera_1.camera.toWorldSpace(pointer.x, pointer.y, cam, canvas);
+    let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
     if (paintMode) {
         let time1 = performance.now();
-        let selection = tileMap.selectRectangle(new kdTree_1.boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
+        let selection = tileMap.selectByRectangle(new kdTree_1.boundingBox(adjustedPointer.x - 500, adjustedPointer.y - 500, adjustedPointer.x + 500, adjustedPointer.y + 500));
         selection.forEach(ele => {
             tileMap.setStyle(ele, 2);
         });
@@ -194,20 +152,122 @@ canvas.addEventListener("pointermove", pointer => {
         invalidate();
     }
     if (sprayMode) {
-        sprayFeatures(adjustedPointer.x, adjustedPointer.y, 0.01, 0.001 * (Math.random() + 0.1), 1);
+        sprayFeatures(adjustedPointer.x, adjustedPointer.y, 100, 10 * (Math.random() + 0.1), 1);
         invalidate();
     }
-    let selected = featureMap.select(adjustedPointer.x, adjustedPointer.y);
+    let selected = featureMap.selectByPoint(adjustedPointer.x, adjustedPointer.y);
     if (selected) {
         setHoveredElement(selected.id);
     }
     else {
-        selected = tileMap.select(adjustedPointer.x, adjustedPointer.y);
+        selected = tileMap.selectByPoint(adjustedPointer.x, adjustedPointer.y);
         if (selected) {
             setHoveredElement(selected.id);
         }
         else {
             setHoveredElement("none");
         }
+    }
+}
+function mouseDown(pointer) {
+    if (pointer.button === 0) {
+        cam.onePointDown(pointer.x, pointer.y);
+        mouse.left = true;
+        mouse.x = pointer.x;
+        mouse.y = pointer.y;
+    }
+    else if (pointer.button === 2) {
+        mouse.right = true;
+        let start = performance.now();
+        let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
+        let featureSelection = featureMap.selectByPoint(adjustedPointer.x, adjustedPointer.y);
+        if (featureSelection) {
+            featureMap.setStyle(featureSelection, 1);
+        }
+        else {
+            tileMap.setStyle(tileMap.selectByPoint(adjustedPointer.x, adjustedPointer.y), 2);
+        }
+        console.log(`selecting and styling 1 feature took ${performance.now() - start} ms`);
+        invalidate();
+    }
+    else {
+        let start = performance.now();
+        let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
+        tileMap.popByPoint(adjustedPointer.x, adjustedPointer.y);
+        console.log(`selecting and removing 1 feature took ${performance.now() - start} ms`);
+        invalidate();
+    }
+}
+function mouseUp(pointer) {
+    if (pointer.button === 0) {
+        mouse.left = false;
+    }
+    if (pointer.button === 2) {
+        mouse.right = false;
+    }
+}
+function mouseScroll(mouse) {
+    targetZoom *= Math.pow(1.01, -mouse.deltaY);
+    invalidate();
+}
+init();
+window.addEventListener("resize", sizeCanvas);
+canvas.addEventListener("wheel", mouseScroll);
+canvas.addEventListener("pointerdown", mouseDown);
+canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); return false; });
+canvas.addEventListener("pointerup", mouseUp);
+canvas.addEventListener("pointermove", mouseMove);
+let touch1;
+let touch2;
+let newTouch;
+function updateTouches(event) {
+    let t1ID = null;
+    let t2ID = null;
+    if (touch1) {
+        t1ID = touch1.identifier;
+    }
+    if (touch2) {
+        t2ID = touch2.identifier;
+    }
+    touch1 = undefined;
+    touch2 = undefined;
+    for (let i = 0; i < event.touches.length; i++) {
+        const touch = event.touches[i];
+        if (touch.identifier == t1ID) {
+            touch1 = touch;
+        }
+        else if (touch.identifier == t2ID) {
+            touch2 = touch;
+        }
+        else {
+            newTouch = touch;
+        }
+    }
+}
+canvas.addEventListener("touchstart", event => {
+    event.preventDefault();
+    updateTouches(event);
+    if (!touch1) {
+        touch1 = newTouch;
+    }
+    else if (!touch2) {
+        touch2 = newTouch;
+        cam.twoPointDown({ x: touch1.clientX, y: touch1.clientY }, { x: touch2.clientX, y: touch2.clientY });
+        invalidate();
+    }
+});
+canvas.addEventListener("touchmove", event => {
+    updateTouches(event);
+    if (touch1 && touch2) {
+        cam.twoPointMove({ x: touch1.clientX, y: touch1.clientY }, { x: touch2.clientX, y: touch2.clientY });
+        invalidate();
+    }
+    if (touch1) {
+    }
+});
+canvas.addEventListener("touchend", event => {
+    updateTouches(event);
+    if (touch2 && !touch1) {
+        touch2 = touch1;
     }
 });

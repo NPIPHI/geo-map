@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Draw map data with webgl",
   "private": true,
-  "main": "app.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

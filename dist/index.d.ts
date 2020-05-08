@@ -7,6 +7,7 @@ export interface BoundingBox {
 }
 export interface Layer {
     zIndex: number;
+    name: string;
     addFeatures(pointStrips: Float64Array[], ids: string[]): void;
     addFeature(pointStrip: Float64Array, id: string): void;
     selectByPoint(x: number, y: number): Feature;
@@ -14,6 +15,11 @@ export interface Layer {
     selectByID(id: string): Feature;
     remove(feature: Feature): void;
     setStyle(feature: Feature, style: number): void;
+    addEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", callback: (arg0: Feature) => void): void;
+    callEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", point: {
+        x: number;
+        y: number;
+    }): void;
     setStyleTable(type: "polygon" | "outline", zoomLevel: "in" | "out", styleIndex: number, r: number, g: number, b: number, thickness?: number): void;
 }
 export declare class GeoMap {
@@ -24,8 +30,10 @@ export declare class GeoMap {
     private renderer;
     private camera;
     private bufferConstructor;
+    private inputHandler;
     constructor(canvas: HTMLCanvasElement, region: BoundingBox);
-    addLayer(zIndex?: number): void;
+    createLayer(name: string, zIndex?: number): Layer;
+    addLayer(layer: Layer): void;
     addData(layer: Layer, geometry: Float64Array[], ids: string[]): Promise<void>;
     addDataJSON(layer: Layer, path: string): Promise<void>;
     addDataBinary(layer: Layer, path: string): Promise<void>;

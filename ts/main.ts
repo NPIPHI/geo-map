@@ -1,6 +1,6 @@
 import { mapRenderer } from "./renderer"
 import { camera } from "./camera"
-import { loadMapChuncks, loadMapChuncksBinary } from "./mapLoad";
+import { loadMapChuncksJSON, loadMapChuncksBinary } from "./mapLoad";
 import { mapLayer } from "./map"
 import { boundingBox } from "./kdTree";
 import { bufferConstructor } from "./bufferConstructor";
@@ -39,9 +39,10 @@ function init() {
     mouse.x = canvas.width/2;
     mouse.y = canvas.height/2;
     console.log(performance.now())
-    tileMap = loadMapChuncksBinary("./binaryChuncks", bbox, new bufferConstructor(squareBbox)) as mapLayer;
+    tileMap = new mapLayer("TileMap", bbox, new bufferConstructor(squareBbox))
+    loadMapChuncksBinary("./binaryChuncks", tileMap);
     //tileMap = loadMapChuncks("./chuncks")
-    featureMap = new mapLayer(bbox, new bufferConstructor(squareBbox));
+    featureMap = new mapLayer("FeatuerMap", bbox, new bufferConstructor(squareBbox));
     renderer = new mapRenderer(gl);
     tileMap.setStyleTableFromArray("polygon", [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.9, 1, 0.8, 0.8, 0.8, 1, 0.9, 0.9, 0.9, 1], [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.5, 0.5, 1]);
     tileMap.setStyleTableFromArray("outline", [0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8, 0, 0, 0.6, 2, 0, 0, 0.6, 2], [0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0,  1, 0, 0, 0, 1, 0, 0, 0]);

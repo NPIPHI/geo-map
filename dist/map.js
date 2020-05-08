@@ -2,44 +2,76 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const feature_1 = require("./feature");
 const memory_1 = require("./memory");
-const bufferConstructor_1 = require("./bufferConstructor");
 const kdTree_1 = require("./kdTree");
 const main_1 = require("./main");
 class mapLayer {
-    constructor(pointStrips, ids) {
-        let outlineData = bufferConstructor_1.bufferConstructor.outlineBuffer(pointStrips);
-        let polygonData = bufferConstructor_1.bufferConstructor.polygonBuffer(pointStrips);
-        this.outlines = outlineData.buffer;
-        this.polygons = polygonData.buffer;
-        let features = [];
-        for (let i = 0; i < pointStrips.length; i++) {
-            features.push(new feature_1.Feature(pointStrips[i], ids[i], new memory_1.GPUMemoryPointer(outlineData.features.offsets[i], outlineData.features.widths[i]), new memory_1.GPUMemoryPointer(polygonData.features.offsets[i], polygonData.features.widths[i])));
-        }
+    constructor(name, bBox, bufferConstructor, zIndex = 0) {
+        this.name = name;
+        this.bBox = bBox;
+        this.zIndex = zIndex;
+        this.outlines = memory_1.GPUBufferSet.create([2 * 4, 2 * 4, 1 * 4]);
+        this.polygons = memory_1.GPUBufferSet.create([2 * 4, 1 * 4]);
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] };
-        this.featureTree = new kdTree_1.KDTree([], new kdTree_1.boundingBox(0, 0, 4, 4));
+        this.featureTree = new kdTree_1.BinarySpaceTree(new kdTree_1.boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
+        this.bufferConstructor = bufferConstructor;
+    }
+    addEventListener(type, callback) {
+        if (type === "hover") {
+            this.hoverListeners.push(callback);
+        }
+        if (type === "mouseover") {
+            this.mouseoverListeners.push(callback);
+        }
+        if (type === "pointerdown") {
+            this.pointerdownListeners.push(callback);
+        }
+        if (type === "pointerup") {
+            this.pointerupListeners.push(callback);
+        }
+    }
+    callEventListener(type, point) {
+        let selectedFeature = this.selectByPoint(point.x, point.y);
+        if (type === "hover") {
+            this.hoverListeners.forEach(listener => listener(selectedFeature));
+        }
+        if (type === "mouseover") {
+            this.mouseoverListeners.forEach(listener => listener(selectedFeature));
+        }
+        if (type === "pointerdown") {
+            this.pointerdownListeners.forEach(listener => listener(selectedFeature));
+        }
+        if (type === "pointerup") {
+            this.pointerupListeners.forEach(listener => listener(selectedFeature));
+        }
     }
     addFeatures(pointStrips, ids) {
         main_1.incrementFeatureNumberDisplay(pointStrips.length);
-        let outlineMemoryPointers = bufferConstructor_1.bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines);
-        let polygonMemoryPointers = bufferConstructor_1.bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons);
+        let outlineMemoryPointers = this.bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines);
+        let polygonMemoryPointers = this.bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons);
         for (let i = 0; i < pointStrips.length; i++) {
             this.featureTree.insert(new feature_1.Feature(pointStrips[i], ids[i], new memory_1.GPUMemoryPointer(outlineMemoryPointers.offsets[i], outlineMemoryPointers.widths[i]), new memory_1.GPUMemoryPointer(polygonMemoryPointers.offsets[i], polygonMemoryPointers.widths[i])));
         }
     }
     addFeature(pointStrip, id) {
         main_1.incrementFeatureNumberDisplay(1);
-        let feature = feature_1.Feature.fromPointStrip(pointStrip, id);
+        let feature = feature_1.Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
         this.outlines.add(feature.outline);
         this.polygons.add(feature.polygon);
         this.featureTree.insert(feature);
     }
-    select(x, y) {
+    selectByPoint(x, y) {
         return this.featureTree.findFirst(x, y);
     }
-    selectRectangle(bBox) {
+    selectByRectangle(bBox) {
         return this.featureTree.findSelection(bBox);
     }
-    remove(x, y) {
+    selectByID(id) {
+        return this.featureTree.findID(id);
+    }
+    remove(feature) {
+        this.featureTree.remove(feature);
+    }
+    popByPoint(x, y) {
         let removed = this.featureTree.popFirst(x, y);
         if (removed) {
             main_1.incrementFeatureNumberDisplay(-1);

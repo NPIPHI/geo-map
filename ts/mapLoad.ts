@@ -18,14 +18,12 @@ export async function loadMapBinary(): Promise<{ points: Float64Array[], ids: st
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksBinary(dir: string, region: BoundingBox, constructor: bufferConstructor): Layer {
-    let geoMap = new mapLayer(region, constructor);
+export function loadMapChuncksBinary(dir: string, target: Layer) {
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
-            addMapBinary(dir + "/" + i, geoMap);
+            addMapBinary(dir + "/" + i, target);
         }
     }));
-    return geoMap;
 }
 
 export async function addMapBinary(path: string, target: Layer): Promise<void> {
@@ -112,14 +110,12 @@ async function parseMapJson(path: string = "../mapData/slabs.json"): Promise<{ p
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncks(dir: string, region: BoundingBox, constructor: bufferConstructor): mapLayer {
-    let geoMap = new mapLayer(region, constructor);
+export function loadMapChuncksJSON(dir: string, target: mapLayer): void {
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
-            addMapJson(dir + "/" + i + ".json", geoMap);
+            addMapJson(dir + "/" + i + ".json", target);
         }
     }));
-    return geoMap;
 }
 
 export async function addMapJson(path: string, target: Layer): Promise<void> {

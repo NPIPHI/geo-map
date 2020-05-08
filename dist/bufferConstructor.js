@@ -13,7 +13,16 @@ function buffer(array) {
     return buf;
 }
 class bufferConstructor {
-    static lineBuffer(pointStrips) {
+    constructor(bBox) {
+        this.xAdd = -bBox.x1;
+        this.xScale = 1 / (bBox.x2 - bBox.x1);
+        this.yAdd = -bBox.y1;
+        this.yScale = 1 / (bBox.y2 - bBox.y1);
+        if (Math.abs(Math.log(this.xScale / this.yScale)) > 0.01) {
+            console.warn("Non square bounds detected, rendering will be stretched");
+        }
+    }
+    lineBuffer(pointStrips) {
         let length = 0;
         pointStrips.forEach(strip => {
             length += strip.length * 2;
@@ -27,10 +36,10 @@ class bufferConstructor {
             GPUMemoryOffsets[featureIndex] = attribIndex;
             GPUMemoryWidths[featureIndex] = 2 * strip.length;
             for (let i = 0; i < strip.length - 1; i += 2) {
-                vertexArray[attribIndex] = strip[i];
-                vertexArray[attribIndex + 1] = strip[i + 1];
-                vertexArray[attribIndex + 2] = strip[i + 2];
-                vertexArray[attribIndex + 3] = strip[i + 3];
+                vertexArray[attribIndex] = (strip[i] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex + 1] = (strip[i + 1] + this.yAdd) * this.yScale;
+                vertexArray[attribIndex + 2] = (strip[i + 2] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex + 3] = (strip[i + 3] + this.yAdd) * this.yScale;
                 attribIndex += 4;
             }
             vertexArray[attribIndex] = strip[strip.length - 2];
@@ -50,17 +59,7 @@ class bufferConstructor {
         let colorBuffer = buffer(colorArray);
         return { buffer: memory_1.GPUBufferSet.createFromBuffers([2 * 4, 3 * 4], [vertexBuffer, colorBuffer], length), features: { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths } };
     }
-    static polygonBuffer(pointStrips) {
-        let buffer = memory_1.GPUBufferSet.create([8, 4]);
-        let features = bufferConstructor.inPlacePolygonBuffer(pointStrips, buffer);
-        return { buffer, features };
-    }
-    static outlineBuffer(pointStrips) {
-        let buffer = memory_1.GPUBufferSet.create([8, 8, 4]);
-        let features = bufferConstructor.inPlaceOutlineBuffer(pointStrips, buffer);
-        return { buffer, features };
-    }
-    static inPlaceOutlineBuffer(pointStrips, target) {
+    inPlaceOutlineBuffer(pointStrips, target) {
         let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
         let GPUMemoryOffsets = new Int32Array(pointStrips.length);
         let GPUMemoryWidths = new Int32Array(pointStrips.length);
@@ -76,12 +75,12 @@ class bufferConstructor {
             let startAttribIndex = attribIndex;
             attribIndex += 1;
             for (let i = 0; i < strip.length + 1; i += 2) {
-                let prevX = strip[(i - 2 + strip.length) % strip.length];
-                let prevY = strip[(i - 1 + strip.length) % strip.length];
-                let curX = strip[i % strip.length];
-                let curY = strip[(i + 1) % strip.length];
-                let nextX = strip[(i + 2) % strip.length];
-                let nextY = strip[(i + 3) % strip.length];
+                let prevX = (strip[(i - 2 + strip.length) % strip.length] + this.xAdd) * this.xScale;
+                let prevY = (strip[(i - 1 + strip.length) % strip.length] + this.yAdd) * this.yScale;
+                let curX = (strip[i % strip.length] + this.xAdd) * this.xScale;
+                let curY = (strip[(i + 1) % strip.length] + this.yAdd) * this.yScale;
+                let nextX = (strip[(i + 2) % strip.length] + this.xAdd) * this.xScale;
+                let nextY = (strip[(i + 3) % strip.length] + this.yAdd) * this.yScale;
                 vertexArray[attribIndex * 2] = curX;
                 vertexArray[attribIndex * 2 + 1] = curY;
                 vertexArray[attribIndex * 2 + 2] = curX;
@@ -135,7 +134,7 @@ class bufferConstructor {
         target.addRaw([vertexArray, normalArray, styleArray]);
         return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths };
     }
-    static inPlacePolygonBuffer(pointStrips, target) {
+    inPlacePolygonBuffer(pointStrips, target) {
         let polygonIndexBuffer = [];
         let length = 0;
         pointStrips.forEach(strip => {
@@ -164,12 +163,12 @@ class bufferConstructor {
                 let v1 = polygonIndexBuffer[i][j];
                 let v2 = polygonIndexBuffer[i][j + 1];
                 let v3 = polygonIndexBuffer[i][j + 2];
-                vertexArray[attribIndex * 2 + 0] = pointStrips[i][v1 * 2 + 0];
-                vertexArray[attribIndex * 2 + 1] = pointStrips[i][v1 * 2 + 1];
-                vertexArray[attribIndex * 2 + 2] = pointStrips[i][v2 * 2 + 0];
-                vertexArray[attribIndex * 2 + 3] = pointStrips[i][v2 * 2 + 1];
-                vertexArray[attribIndex * 2 + 4] = pointStrips[i][v3 * 2 + 0];
-                vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1];
+                vertexArray[attribIndex * 2 + 0] = (pointStrips[i][v1 * 2 + 0] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex * 2 + 1] = (pointStrips[i][v1 * 2 + 1] + this.yAdd) * this.yScale;
+                vertexArray[attribIndex * 2 + 2] = (pointStrips[i][v2 * 2 + 0] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex * 2 + 3] = (pointStrips[i][v2 * 2 + 1] + this.yAdd) * this.yScale;
+                vertexArray[attribIndex * 2 + 4] = (pointStrips[i][v3 * 2 + 0] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex * 2 + 5] = (pointStrips[i][v3 * 2 + 1] + this.yAdd) * this.yScale;
                 styleArray[attribIndex] = garishColor;
                 styleArray[attribIndex + 1] = garishColor;
                 styleArray[attribIndex + 2] = garishColor;
@@ -180,19 +179,16 @@ class bufferConstructor {
         target.addRaw([vertexArray, styleArray]);
         return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths };
     }
-}
-exports.bufferConstructor = bufferConstructor;
-class featureConstructor {
-    static lineBuffer(strip) {
+    featureLineBuffer(strip) {
         let length = strip.length * 2;
         let vertexArray = new Float32Array(length * 2);
         let colorArray = new Float32Array(length * 3);
         let index = 0;
         for (let i = 0; i < strip.length - 1; i += 2) {
-            vertexArray[index] = strip[i];
-            vertexArray[index + 1] = strip[i + 1];
-            vertexArray[index + 2] = strip[i + 2];
-            vertexArray[index + 3] = strip[i + 3];
+            vertexArray[index] = (strip[i] + this.xAdd) * this.xScale;
+            vertexArray[index + 1] = (strip[i + 1] + this.yAdd) * this.yScale;
+            vertexArray[index + 2] = (strip[i + 2] + this.xAdd) * this.xScale;
+            vertexArray[index + 3] = (strip[i + 3] + this.yAdd) * this.yScale;
             index += 4;
         }
         vertexArray[index] = strip[strip.length - 2];
@@ -207,7 +203,7 @@ class featureConstructor {
         }
         return new memory_1.GPUMemoryObject(length, [vertexArray, colorArray]);
     }
-    static polygonBuffer(strip) {
+    featurePolygonBuffer(strip) {
         let polygonIndexBuffer = earcut_1.default(strip);
         let length = polygonIndexBuffer.length;
         let vertexArray = new Float32Array(length * 2);
@@ -218,12 +214,12 @@ class featureConstructor {
             let v1 = polygonIndexBuffer[i];
             let v2 = polygonIndexBuffer[i + 1];
             let v3 = polygonIndexBuffer[i + 2];
-            vertexArray[vIndex + 0] = strip[v1 * 2 + 0];
-            vertexArray[vIndex + 1] = strip[v1 * 2 + 1];
-            vertexArray[vIndex + 2] = strip[v2 * 2 + 0];
-            vertexArray[vIndex + 3] = strip[v2 * 2 + 1];
-            vertexArray[vIndex + 4] = strip[v3 * 2 + 0];
-            vertexArray[vIndex + 5] = strip[v3 * 2 + 1];
+            vertexArray[vIndex + 0] = (strip[v1 * 2 + 0] + this.xAdd) * this.xScale;
+            vertexArray[vIndex + 1] = (strip[v1 * 2 + 1] + this.yAdd) * this.yScale;
+            vertexArray[vIndex + 2] = (strip[v2 * 2 + 0] + this.xAdd) * this.xScale;
+            vertexArray[vIndex + 3] = (strip[v2 * 2 + 1] + this.yAdd) * this.yScale;
+            vertexArray[vIndex + 4] = (strip[v3 * 2 + 0] + this.xAdd) * this.xScale;
+            vertexArray[vIndex + 5] = (strip[v3 * 2 + 1] + this.yAdd) * this.yScale;
             vIndex += 6;
             for (let i = 0; i < 3; i++) {
                 styleArray[cIndex + i] = 0;
@@ -232,7 +228,7 @@ class featureConstructor {
         }
         return new memory_1.GPUMemoryObject(length, [vertexArray, styleArray]);
     }
-    static outlineBuffer(strip) {
+    featureOutlineBuffer(strip) {
         let length = strip.length + 4;
         let vertexArray = new Float32Array(length * 2);
         let normalArray = new Float32Array(length * 2);
@@ -244,12 +240,12 @@ class featureConstructor {
         nIndex += 2;
         cIndex += 3;
         for (let i = 0; i < strip.length + 1; i += 2) {
-            let prevX = strip[(i - 2 + strip.length) % strip.length];
-            let prevY = strip[(i - 1 + strip.length) % strip.length];
-            let curX = strip[i % strip.length];
-            let curY = strip[(i + 1) % strip.length];
-            let nextX = strip[(i + 2) % strip.length];
-            let nextY = strip[(i + 3) % strip.length];
+            let prevX = (strip[(i - 2 + strip.length) % strip.length] + this.xAdd) * this.xScale;
+            let prevY = (strip[(i - 1 + strip.length) % strip.length] + this.yAdd) * this.yScale;
+            let curX = (strip[i % strip.length] + this.xAdd) * this.xScale;
+            let curY = (strip[(i + 1) % strip.length] + this.yAdd) * this.yScale;
+            let nextX = (strip[(i + 2) % strip.length] + this.xAdd) * this.xScale;
+            let nextY = (strip[(i + 3) % strip.length] + this.yAdd) * this.yScale;
             vertexArray[vIndex] = curX;
             vertexArray[vIndex + 1] = curY;
             vertexArray[vIndex + 2] = curX;
@@ -302,4 +298,4 @@ class featureConstructor {
         return new memory_1.GPUMemoryObject(length, [vertexArray, normalArray, styleArray]);
     }
 }
-exports.featureConstructor = featureConstructor;
+exports.bufferConstructor = bufferConstructor;

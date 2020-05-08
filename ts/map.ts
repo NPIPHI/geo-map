@@ -8,18 +8,55 @@ import { Layer, BoundingBox } from "./index";
 export class mapLayer implements Layer{
     private featureTree: BinarySpaceTree<Feature>;
     private bufferConstructor: bufferConstructor;
-    zIndex = 0;
+    private bBox: BoundingBox;
+    private hoverListeners: ((arg0: Feature)=>void)[];
+    private mouseoverListeners: ((arg0: Feature)=>void)[];
+    private pointerdownListeners: ((arg0: Feature)=>void)[];
+    private pointerupListeners: ((arg0: Feature)=>void)[];
+    zIndex: number;
+    name: string;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     styleTable: { polygon: Float32Array[], outline: Float32Array[] };
 
-    constructor(bBox: BoundingBox, bufferConstructor: bufferConstructor, zIndex = 0) {
+    constructor(name: string, bBox: BoundingBox, bufferConstructor: bufferConstructor, zIndex = 0) {
+        this.name = name;
+        this.bBox = bBox;
         this.zIndex = zIndex;
         this.outlines = GPUBufferSet.create([2*4, 2*4, 1*4]);
         this.polygons = GPUBufferSet.create([2*4, 1*4]);
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] }
         this.featureTree = new BinarySpaceTree(new boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
         this.bufferConstructor = bufferConstructor
+    }
+    addEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", callback: (arg0: Feature)=>void){
+        if(type === "hover"){
+            this.hoverListeners.push(callback);
+        }
+        if(type === "mouseover"){
+            this.mouseoverListeners.push(callback);
+        }
+        if(type === "pointerdown"){
+            this.pointerdownListeners.push(callback);
+        }
+        if(type === "pointerup"){
+            this.pointerupListeners.push(callback);
+        }
+    }
+    callEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", point: {x: number, y: number}){
+        let selectedFeature = this.selectByPoint(point.x, point.y);
+        if(type === "hover"){
+            this.hoverListeners.forEach(listener=>listener(selectedFeature))
+        }
+        if(type === "mouseover"){
+            this.mouseoverListeners.forEach(listener=>listener(selectedFeature))
+        }
+        if(type === "pointerdown"){
+            this.pointerdownListeners.forEach(listener=>listener(selectedFeature))
+        }
+        if(type === "pointerup"){
+            this.pointerupListeners.forEach(listener=>listener(selectedFeature))
+        }
     }
     addFeatures(pointStrips: Float64Array[], ids: string[]) {
         incrementFeatureNumberDisplay(pointStrips.length);

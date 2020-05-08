@@ -1,13 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const map_1 = require("./map");
 const main_1 = require("./main");
-const bbox = { minx: 6429499.583465844, miny: 1797629.5004901737, maxx: 6446651.559660509, maxy: 1805369.9351405054 };
 async function loadMapBinary() {
     let file = await fetch("../mapData/output.buf");
     let buffer = await file.arrayBuffer();
     let mapData = await (await fetch("../mapData/output.json")).json();
-    let pointArray = new Float32Array(buffer);
+    let pointArray = new Float64Array(buffer);
     let pointPaths = [];
     let idList = [];
     mapData.shapes.forEach((shape) => {
@@ -17,41 +15,40 @@ async function loadMapBinary() {
     return { points: pointPaths, ids: idList };
 }
 exports.loadMapBinary = loadMapBinary;
-function loadMapChuncksBinary(dir) {
-    let geoMap = new map_1.mapLayer([], []);
+function loadMapChuncksBinary(dir, target) {
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
-        for (let i = 6; i < meta.count; i++) {
-            addMapBinary(dir + "/" + i, geoMap);
+        for (let i = 0; i < meta.count; i++) {
+            addMapBinary(dir + "/" + i, target);
         }
     }));
-    return geoMap;
 }
 exports.loadMapChuncksBinary = loadMapChuncksBinary;
-function addMapBinary(path, target) {
+async function addMapBinary(path, target) {
     return new Promise(resolve => {
         parseMapBinary(path).then(mapData => {
             let time1 = performance.now();
-            target.addFeatures(mapData, []);
+            target.addFeatures(mapData.points, mapData.ids);
             main_1.invalidate();
-            console.log(`Adding ${mapData.length} features took ${performance.now() - time1} ms`);
+            console.log(`Adding ${mapData.points.length} features took ${performance.now() - time1} ms`);
             console.log(performance.now());
             resolve();
         });
     });
 }
+exports.addMapBinary = addMapBinary;
 async function parseMapBinary(path) {
     return new Promise(resolve => {
-        new binaryLoader(path, (points, indices) => {
+        new binaryLoader(path, (points, indices, meta) => {
             let pointPaths = [];
             for (let i = 0; i < indices.length; i += 2) {
-                let path = new Float32Array(indices[i + 1] * 2);
+                let path = new Float64Array(indices[i + 1] * 2);
                 for (let j = 0; j < indices[i + 1]; j++) {
-                    path[j * 2] = points[i * 2 + j * 2];
-                    path[j * 2 + 1] = points[i * 2 + j * 2 + 1];
+                    path[j * 2] = points[indices[i] * 2 + j * 2];
+                    path[j * 2 + 1] = points[indices[i] * 2 + j * 2 + 1];
                 }
                 pointPaths.push(path);
             }
-            resolve(pointPaths);
+            resolve({ points: pointPaths, ids: meta });
         });
     });
 }
@@ -59,17 +56,25 @@ class binaryLoader {
     constructor(path, resolve) {
         fetch(path + "points.bin").then(points => {
             points.arrayBuffer().then(buffer => {
-                this.points = new Float32Array(new Int8Array(buffer).buffer);
-                if (this.indices) {
-                    this.resolve(this.points, this.indices);
+                this.points = new Float64Array(new Int8Array(buffer).buffer);
+                if (this.indices && this.metadata) {
+                    this.resolve(this.points, this.indices, this.metadata);
                 }
             });
         });
         fetch(path + "indices.bin").then(indices => {
             indices.arrayBuffer().then(buffer => {
                 this.indices = new Int32Array(new Int8Array(buffer).buffer);
-                if (this.points) {
-                    this.resolve(this.points, this.indices);
+                if (this.points && this.metadata) {
+                    this.resolve(this.points, this.indices, this.metadata);
+                }
+            });
+        });
+        fetch(path + "meta.json").then(fileString => {
+            fileString.json().then(json => {
+                this.metadata = json;
+                if (this.points && this.indices) {
+                    this.resolve(this.points, this.indices, this.metadata);
                 }
             });
         });
@@ -81,32 +86,26 @@ async function parseMapJson(path = "../mapData/slabs.json") {
     let jsonData = await rawData.json();
     let pointPaths = [];
     let idList = [];
-    let xRescale = 1 / (bbox.maxx - bbox.minx);
-    let yRescale = 1 / (bbox.maxx - bbox.minx);
-    let xOffset = bbox.minx;
-    let yOffset = bbox.miny;
     jsonData.forEach((slab) => {
         let points = slab.geometry.coordinates[0][0];
-        let strip = new Float32Array(points.length * 2 - 2);
+        let strip = new Float64Array(points.length * 2 - 2);
         for (let i = 0; i < points.length - 1; i++) {
-            strip[i * 2] = (points[i][0] - xOffset) * xRescale;
-            strip[i * 2 + 1] = (points[i][1] - yOffset) * yRescale;
+            strip[i * 2] = points[i][0];
+            strip[i * 2 + 1] = points[i][1];
         }
         idList.push(slab.properties.BRANCH_ID + "-" + slab.properties.SECTION_ID + "-" + slab.properties.postgis_id);
         pointPaths.push(strip);
     });
     return { points: pointPaths, ids: idList };
 }
-function loadMapChuncks(dir) {
-    let geoMap = new map_1.mapLayer([], []);
+function loadMapChuncksJSON(dir, target) {
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
-            addMapJson(dir + "/" + i + ".json", geoMap);
+            addMapJson(dir + "/" + i + ".json", target);
         }
     }));
-    return geoMap;
 }
-exports.loadMapChuncks = loadMapChuncks;
+exports.loadMapChuncksJSON = loadMapChuncksJSON;
 async function addMapJson(path, target) {
     return new Promise(resolve => {
         parseMapJson(path).then(mapData => {
@@ -119,3 +118,4 @@ async function addMapJson(path, target) {
         });
     });
 }
+exports.addMapJson = addMapJson;
