@@ -7,6 +7,7 @@ class inputHandler {
         this.smoothTransitionFactor = 1;
         this.camera = camera;
         this.mouse = { x: 0, y: 0, left: false, right: false, middle: false };
+        this.targets = [];
         this.invalidate = invalidateCallback;
         canvas.addEventListener("pointerdown", (pointer) => this.mousedown(pointer.offsetY, pointer.offsetY, pointer.button));
         canvas.addEventListener("pointermove", (pointer) => this.mousemove(pointer.offsetX, pointer.offsetY));
