@@ -7,8 +7,8 @@ export interface BoundingBox {
 }
 export interface Layer {
     zIndex: number;
-    addFeatures(pointStrips: Float32Array[], ids: string[]): void;
-    addFeature(pointStrip: Float32Array, id: string): void;
+    addFeatures(pointStrips: Float64Array[], ids: string[]): void;
+    addFeature(pointStrip: Float64Array, id: string): void;
     selectByPoint(x: number, y: number): Feature;
     selectByRectangle(boundingBox: BoundingBox): Feature[];
     selectByID(id: string): Feature;
@@ -20,10 +20,13 @@ export declare class GeoMap {
     layers: Layer[];
     private gl;
     private bBox;
+    private squareRegion;
     private renderer;
+    private camera;
+    private bufferConstructor;
     constructor(canvas: HTMLCanvasElement, region: BoundingBox);
     addLayer(zIndex?: number): void;
-    addData(layer: Layer, geometry: Float32Array[], ids: string[]): void;
+    addData(layer: Layer, geometry: Float64Array[], ids: string[]): Promise<void>;
     addDataJSON(layer: Layer, path: string): Promise<void>;
     addDataBinary(layer: Layer, path: string): Promise<void>;
 }

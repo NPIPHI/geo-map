@@ -1,37 +1,27 @@
 import { GPUBufferSet, GPUMemoryObject } from "./memory";
+import { BoundingBox } from ".";
 export declare class bufferConstructor {
-    static lineBuffer(pointStrips: Float32Array[]): {
+    private xAdd;
+    private xScale;
+    private yAdd;
+    private yScale;
+    constructor(bBox: BoundingBox);
+    lineBuffer(pointStrips: Float64Array[]): {
         buffer: GPUBufferSet;
         features: {
             offsets: Int32Array;
             widths: Int32Array;
         };
     };
-    static polygonBuffer(pointStrips: Float32Array[]): {
-        buffer: GPUBufferSet;
-        features: {
-            offsets: Int32Array;
-            widths: Int32Array;
-        };
-    };
-    static outlineBuffer(pointStrips: Float32Array[]): {
-        buffer: GPUBufferSet;
-        features: {
-            offsets: Int32Array;
-            widths: Int32Array;
-        };
-    };
-    static inPlaceOutlineBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {
+    inPlaceOutlineBuffer(pointStrips: Float64Array[], target: GPUBufferSet): {
         offsets: Int32Array;
         widths: Int32Array;
     };
-    static inPlacePolygonBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {
+    inPlacePolygonBuffer(pointStrips: Float64Array[], target: GPUBufferSet): {
         offsets: Int32Array;
         widths: Int32Array;
     };
-}
-export declare class featureConstructor {
-    static lineBuffer(strip: Float32Array): GPUMemoryObject;
-    static polygonBuffer(strip: Float32Array): GPUMemoryObject;
-    static outlineBuffer(strip: Float32Array): GPUMemoryObject;
+    featureLineBuffer(strip: Float64Array): GPUMemoryObject;
+    featurePolygonBuffer(strip: Float64Array): GPUMemoryObject;
+    featureOutlineBuffer(strip: Float64Array): GPUMemoryObject;
 }

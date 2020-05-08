@@ -3,35 +3,37 @@ import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
 import { bufferConstructor } from "./bufferConstructor";
 import { BinarySpaceTree, boundingBox } from "./kdTree";
 import { incrementFeatureNumberDisplay } from "./main";
-import { Layer } from "./index";
+import { Layer, BoundingBox } from "./index";
 
 export class mapLayer implements Layer{
     private featureTree: BinarySpaceTree<Feature>;
+    private bufferConstructor: bufferConstructor;
     zIndex = 0;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     styleTable: { polygon: Float32Array[], outline: Float32Array[] };
 
-    constructor(zIndex = 0) {
+    constructor(bBox: BoundingBox, bufferConstructor: bufferConstructor, zIndex = 0) {
         this.zIndex = zIndex;
         this.outlines = GPUBufferSet.create([2*4, 2*4, 1*4]);
         this.polygons = GPUBufferSet.create([2*4, 1*4]);
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] }
-        this.featureTree = new BinarySpaceTree(new boundingBox(0, 0, 4, 4));
+        this.featureTree = new BinarySpaceTree(new boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
+        this.bufferConstructor = bufferConstructor
     }
-    addFeatures(pointStrips: Float32Array[], ids: string[]) {
+    addFeatures(pointStrips: Float64Array[], ids: string[]) {
         incrementFeatureNumberDisplay(pointStrips.length);
-        let outlineMemoryPointers = bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
-        let polygonMemoryPointers = bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
+        let outlineMemoryPointers = this.bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
+        let polygonMemoryPointers = this.bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
         for (let i = 0; i < pointStrips.length; i++) {
             this.featureTree.insert(new Feature(pointStrips[i], ids[i],
                 new GPUMemoryPointer(outlineMemoryPointers.offsets[i], outlineMemoryPointers.widths[i]),
                 new GPUMemoryPointer(polygonMemoryPointers.offsets[i], polygonMemoryPointers.widths[i])))
         }
     }
-    addFeature(pointStrip: Float32Array, id: string){
+    addFeature(pointStrip: Float64Array, id: string){
         incrementFeatureNumberDisplay(1);
-        let feature = Feature.fromPointStrip(pointStrip, id);
+        let feature = Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
         this.outlines.add(feature.outline as GPUMemoryObject);
         this.polygons.add(feature.polygon as GPUMemoryObject);
         this.featureTree.insert(feature);

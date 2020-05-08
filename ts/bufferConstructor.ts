@@ -1,6 +1,7 @@
 import { gl } from "./main"
 import earcut from "earcut"
 import { GPUBufferSet, GPUMemoryObject } from "./memory"
+import { BoundingBox } from ".";
 
 function buffer(array: ArrayBuffer) {
     let buf = gl.createBuffer();
@@ -10,10 +11,23 @@ function buffer(array: ArrayBuffer) {
 }
 
 export class bufferConstructor {
-    static lineBuffer(pointStrips: Float32Array[]): {buffer: GPUBufferSet, features: {offsets: Int32Array, widths: Int32Array}}  {
+    private xAdd: number;
+    private xScale: number;
+    private yAdd: number;
+    private yScale: number;
+    constructor(bBox: BoundingBox) {
+        this.xAdd = -bBox.x1;
+        this.xScale = 1 / (bBox.x2 - bBox.x1);
+        this.yAdd = -bBox.y1;
+        this.yScale = 1/ (bBox.y2 - bBox.y1);
+        if(Math.abs(Math.log(this.xScale/this.yScale))>0.01){
+            console.warn("Non square bounds detected, rendering will be stretched")
+        }
+    }
+    lineBuffer(pointStrips: Float64Array[]): { buffer: GPUBufferSet, features: { offsets: Int32Array, widths: Int32Array } } {
         let length = 0;
         pointStrips.forEach(strip => {
-            length += strip.length*2;
+            length += strip.length * 2;
         })
         let GPUMemoryOffsets = new Int32Array(length);
         let GPUMemoryWidths = new Int32Array(length);
@@ -24,10 +38,10 @@ export class bufferConstructor {
             GPUMemoryOffsets[featureIndex] = attribIndex;
             GPUMemoryWidths[featureIndex] = 2 * strip.length;
             for (let i = 0; i < strip.length - 1; i += 2) {
-                vertexArray[attribIndex] = strip[i];
-                vertexArray[attribIndex + 1] = strip[i + 1];
-                vertexArray[attribIndex + 2] = strip[i + 2];
-                vertexArray[attribIndex + 3] = strip[i + 3];
+                vertexArray[attribIndex] = (strip[i] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex + 1] = (strip[i + 1] + this.yAdd) * this.yScale;
+                vertexArray[attribIndex + 2] = (strip[i + 2] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex + 3] = (strip[i + 3] + this.yAdd) * this.yScale;
                 attribIndex += 4;
             }
             vertexArray[attribIndex] = strip[strip.length - 2];
@@ -49,22 +63,10 @@ export class bufferConstructor {
 
         let colorBuffer = buffer(colorArray);
 
-        return {buffer: GPUBufferSet.createFromBuffers([2*4, 3*4], [vertexBuffer, colorBuffer], length), features: {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths} }
+        return { buffer: GPUBufferSet.createFromBuffers([2 * 4, 3 * 4], [vertexBuffer, colorBuffer], length), features: { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths } }
     }
 
-    static polygonBuffer(pointStrips: Float32Array[]): {buffer: GPUBufferSet, features: {offsets: Int32Array, widths: Int32Array}} {
-        let buffer = GPUBufferSet.create([8, 4]);
-        let features = bufferConstructor.inPlacePolygonBuffer(pointStrips, buffer);
-        return {buffer, features};
-    }
-
-    static outlineBuffer(pointStrips: Float32Array[]): {buffer: GPUBufferSet, features: {offsets: Int32Array, widths: Int32Array}} {
-        let buffer = GPUBufferSet.create([8, 8, 4]);
-        let features = bufferConstructor.inPlaceOutlineBuffer(pointStrips, buffer);
-        return {buffer, features};
-    }
-
-    static inPlaceOutlineBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {offsets: Int32Array, widths: Int32Array} {
+    inPlaceOutlineBuffer(pointStrips: Float64Array[], target: GPUBufferSet): { offsets: Int32Array, widths: Int32Array } {
         let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
         let GPUMemoryOffsets = new Int32Array(pointStrips.length);
         let GPUMemoryWidths = new Int32Array(pointStrips.length);
@@ -83,12 +85,12 @@ export class bufferConstructor {
 
             //reserve space for the degenrate point
             for (let i = 0; i < strip.length + 1; i += 2) {
-                let prevX = strip[(i - 2 + strip.length) % strip.length];
-                let prevY = strip[(i - 1 + strip.length) % strip.length];
-                let curX = strip[i % strip.length];
-                let curY = strip[(i + 1) % strip.length];
-                let nextX = strip[(i + 2) % strip.length];
-                let nextY = strip[(i + 3) % strip.length];
+                let prevX = (strip[(i - 2 + strip.length) % strip.length] + this.xAdd) * this.xScale;
+                let prevY = (strip[(i - 1 + strip.length) % strip.length] + this.yAdd) * this.yScale;
+                let curX = (strip[i % strip.length] + this.xAdd) * this.xScale;
+                let curY = (strip[(i + 1) % strip.length] + this.yAdd) * this.yScale;
+                let nextX = (strip[(i + 2) % strip.length] + this.xAdd) * this.xScale;
+                let nextY = (strip[(i + 3) % strip.length] + this.yAdd) * this.yScale;
 
                 vertexArray[attribIndex * 2] = curX;
                 vertexArray[attribIndex * 2 + 1] = curY;
@@ -151,10 +153,10 @@ export class bufferConstructor {
         });
 
         target.addRaw([vertexArray, normalArray, styleArray]);
-        return {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths};
+        return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths };
     }
 
-    static inPlacePolygonBuffer(pointStrips: Float32Array[], target: GPUBufferSet): {offsets: Int32Array, widths: Int32Array} {
+    inPlacePolygonBuffer(pointStrips: Float64Array[], target: GPUBufferSet): { offsets: Int32Array, widths: Int32Array } {
         let polygonIndexBuffer: number[][] = [];
         let length = 0;
         pointStrips.forEach(strip => {
@@ -174,47 +176,45 @@ export class bufferConstructor {
         for (let i = 0; i < polygonIndexBuffer.length; i++) {
             GPUMemoryOffsets[featureIndex] = attribIndex + memoryOffset;
             GPUMemoryWidths[featureIndex] = polygonIndexBuffer[i].length;
-            let garishColor= 0;
-            if(Math.random() < 0.05){
+            let garishColor = 0;
+            if (Math.random() < 0.05) {
                 garishColor = 1;
             }
-            if(Math.random() < 0.05){
+            if (Math.random() < 0.05) {
                 garishColor = 3;
             }
             for (let j = 0; j < polygonIndexBuffer[i].length; j += 3) {
                 let v1 = polygonIndexBuffer[i][j];
                 let v2 = polygonIndexBuffer[i][j + 1];
                 let v3 = polygonIndexBuffer[i][j + 2];
-                vertexArray[attribIndex * 2 + 0] = pointStrips[i][v1 * 2 + 0]
-                vertexArray[attribIndex * 2 + 1] = pointStrips[i][v1 * 2 + 1]
-                vertexArray[attribIndex * 2 + 2] = pointStrips[i][v2 * 2 + 0]
-                vertexArray[attribIndex * 2 + 3] = pointStrips[i][v2 * 2 + 1]
-                vertexArray[attribIndex * 2 + 4] = pointStrips[i][v3 * 2 + 0]
-                vertexArray[attribIndex * 2 + 5] = pointStrips[i][v3 * 2 + 1]
+                vertexArray[attribIndex * 2 + 0] = (pointStrips[i][v1 * 2 + 0] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex * 2 + 1] = (pointStrips[i][v1 * 2 + 1] + this.yAdd) * this.yScale;
+                vertexArray[attribIndex * 2 + 2] = (pointStrips[i][v2 * 2 + 0] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex * 2 + 3] = (pointStrips[i][v2 * 2 + 1] + this.yAdd) * this.yScale;
+                vertexArray[attribIndex * 2 + 4] = (pointStrips[i][v3 * 2 + 0] + this.xAdd) * this.xScale;
+                vertexArray[attribIndex * 2 + 5] = (pointStrips[i][v3 * 2 + 1] + this.yAdd) * this.yScale;
                 styleArray[attribIndex] = garishColor;
-                styleArray[attribIndex+1] = garishColor;
-                styleArray[attribIndex+2] = garishColor;
+                styleArray[attribIndex + 1] = garishColor;
+                styleArray[attribIndex + 2] = garishColor;
                 attribIndex += 3;
             }
             featureIndex++;
         }
 
         target.addRaw([vertexArray, styleArray]);
-        return {offsets: GPUMemoryOffsets, widths: GPUMemoryWidths}
+        return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths }
     }
-}
 
-export class featureConstructor {
-    static lineBuffer(strip: Float32Array): GPUMemoryObject {
+    featureLineBuffer(strip: Float64Array): GPUMemoryObject {
         let length = strip.length * 2; //2 points per line
         let vertexArray = new Float32Array(length * 2);
         let colorArray = new Float32Array(length * 3);
         let index = 0;
         for (let i = 0; i < strip.length - 1; i += 2) {
-            vertexArray[index] = strip[i];
-            vertexArray[index + 1] = strip[i + 1];
-            vertexArray[index + 2] = strip[i + 2];
-            vertexArray[index + 3] = strip[i + 3];
+            vertexArray[index] = (strip[i] + this.xAdd) * this.xScale;
+            vertexArray[index + 1] = (strip[i + 1] + this.yAdd) * this.yScale;
+            vertexArray[index + 2] = (strip[i + 2] + this.xAdd) * this.xScale;
+            vertexArray[index + 3] = (strip[i + 3] + this.yAdd) * this.yScale;
             index += 4;
         }
         vertexArray[index] = strip[strip.length - 2];
@@ -233,7 +233,7 @@ export class featureConstructor {
         return new GPUMemoryObject(length, [vertexArray, colorArray]);
     }
 
-    static polygonBuffer(strip: Float32Array): GPUMemoryObject {
+    featurePolygonBuffer(strip: Float64Array): GPUMemoryObject {
         let polygonIndexBuffer: number[] = earcut(strip);
         let length = polygonIndexBuffer.length;
         let vertexArray = new Float32Array(length * 2);
@@ -245,12 +245,12 @@ export class featureConstructor {
             let v1 = polygonIndexBuffer[i];
             let v2 = polygonIndexBuffer[i + 1];
             let v3 = polygonIndexBuffer[i + 2];
-            vertexArray[vIndex + 0] = strip[v1 * 2 + 0]
-            vertexArray[vIndex + 1] = strip[v1 * 2 + 1]
-            vertexArray[vIndex + 2] = strip[v2 * 2 + 0]
-            vertexArray[vIndex + 3] = strip[v2 * 2 + 1]
-            vertexArray[vIndex + 4] = strip[v3 * 2 + 0]
-            vertexArray[vIndex + 5] = strip[v3 * 2 + 1]
+            vertexArray[vIndex + 0] = (strip[v1 * 2 + 0] + this.xAdd) * this.xScale;
+            vertexArray[vIndex + 1] = (strip[v1 * 2 + 1] + this.yAdd) * this.yScale;
+            vertexArray[vIndex + 2] = (strip[v2 * 2 + 0] + this.xAdd) * this.xScale;
+            vertexArray[vIndex + 3] = (strip[v2 * 2 + 1] + this.yAdd) * this.yScale;
+            vertexArray[vIndex + 4] = (strip[v3 * 2 + 0] + this.xAdd) * this.xScale;
+            vertexArray[vIndex + 5] = (strip[v3 * 2 + 1] + this.yAdd) * this.yScale;
             vIndex += 6;
 
             for (let i = 0; i < 3; i++) {
@@ -262,7 +262,7 @@ export class featureConstructor {
         return new GPUMemoryObject(length, [vertexArray, styleArray]);
     }
 
-    static outlineBuffer(strip: Float32Array): GPUMemoryObject {
+    featureOutlineBuffer(strip: Float64Array): GPUMemoryObject {
         let length = strip.length + 4;
         let vertexArray = new Float32Array(length * 2);
         let normalArray = new Float32Array(length * 2);
@@ -276,12 +276,12 @@ export class featureConstructor {
 
         //reserve space for the degenrate point
         for (let i = 0; i < strip.length + 1; i += 2) {
-            let prevX = strip[(i - 2 + strip.length) % strip.length];
-            let prevY = strip[(i - 1 + strip.length) % strip.length];
-            let curX = strip[i % strip.length];
-            let curY = strip[(i + 1) % strip.length];
-            let nextX = strip[(i + 2) % strip.length];
-            let nextY = strip[(i + 3) % strip.length];
+            let prevX = (strip[(i - 2 + strip.length) % strip.length] + this.xAdd) * this.xScale;
+            let prevY = (strip[(i - 1 + strip.length) % strip.length] + this.yAdd) * this.yScale;
+            let curX = (strip[i % strip.length] + this.xAdd) * this.xScale;
+            let curY = (strip[(i + 1) % strip.length] + this.yAdd) * this.yScale;
+            let nextX = (strip[(i + 2) % strip.length] + this.xAdd) * this.xScale;
+            let nextY = (strip[(i + 3) % strip.length] + this.yAdd) * this.yScale;
 
             vertexArray[vIndex] = curX;
             vertexArray[vIndex + 1] = curY;

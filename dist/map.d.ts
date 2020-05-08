@@ -1,9 +1,11 @@
 import { Feature } from "./feature";
 import { GPUBufferSet } from "./memory";
+import { bufferConstructor } from "./bufferConstructor";
 import { boundingBox } from "./kdTree";
-import { Layer } from "./index";
+import { Layer, BoundingBox } from "./index";
 export declare class mapLayer implements Layer {
     private featureTree;
+    private bufferConstructor;
     zIndex: number;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
@@ -11,9 +13,9 @@ export declare class mapLayer implements Layer {
         polygon: Float32Array[];
         outline: Float32Array[];
     };
-    constructor(zIndex?: number);
-    addFeatures(pointStrips: Float32Array[], ids: string[]): void;
-    addFeature(pointStrip: Float32Array, id: string): void;
+    constructor(bBox: BoundingBox, bufferConstructor: bufferConstructor, zIndex?: number);
+    addFeatures(pointStrips: Float64Array[], ids: string[]): void;
+    addFeature(pointStrip: Float64Array, id: string): void;
     selectByPoint(x: number, y: number): Feature | undefined;
     selectByRectangle(bBox: boundingBox): Feature[];
     selectByID(id: string): Feature;

@@ -1,4 +1,5 @@
 import * as matrix from "gl-matrix"
+import { BoundingBox } from ".";
 
 export class camera {
     private _view: matrix.mat3;
@@ -6,20 +7,23 @@ export class camera {
     private aespectRatioView: matrix.mat3;
     private aespectRatioInverse: matrix.mat3;
     private inverseView: matrix.mat3;
+    private worldSpaceTransform: matrix.mat3;
     private onePointTouchLocation: matrix.vec2;
 
     private twoPointTouchLocations: {p1: matrix.vec2, p2: matrix.vec2}
-    constructor(width?: number, height?: number){
+    constructor(worldRegion: BoundingBox, width?: number, height?: number){
         this.aespectRatioView = matrix.mat3.create();
         this.aespectRatioInverse = matrix.mat3.create();
         this.canvasView = matrix.mat3.create();
         this._view = matrix.mat3.create();
         this.inverseView = matrix.mat3.create();
+        this.worldSpaceTransform = matrix.mat3.create();
         this.onePointTouchLocation = matrix.vec2.create();
         this.twoPointTouchLocations = {p1: matrix.vec2.create(), p2: matrix.vec2.create()}
         if(width && height){
             this.setAespectRatio(width, height);
         }
+        this.setWorldSpace(worldRegion);
     }
     get view(): matrix.mat3{
         //return new Float32Array(this._view);
@@ -109,11 +113,16 @@ export class camera {
         matrix.mat3.fromTranslation(this.canvasView, [-1, 1]);
         matrix.mat3.scale(this.canvasView, this.canvasView, [2/width, -2/height])
     } 
+    setWorldSpace(rect: BoundingBox){
+        matrix.mat3.fromTranslation(this.worldSpaceTransform, [rect.x1, rect.y1]);
+        matrix.mat3.scale(this.worldSpaceTransform, this.worldSpaceTransform, [(rect.x2 - rect.x1), (rect.y2 - rect.y1)]);
+    }
     toWorldSpace(x: number, y: number): {x: number, y: number}{
         let res = new Float32Array([x, y]);
         matrix.vec2.transformMat3(res, res, this.canvasView);
         matrix.vec2.transformMat3(res, res, this.aespectRatioInverse);
         matrix.vec2.transformMat3(res, res, this.inverseView);
+        matrix.vec2.transformMat3(res, res, this.worldSpaceTransform);
         return {x: res[0], y: res[1]}
     }
     getZoom(){

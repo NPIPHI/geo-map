@@ -3,6 +3,7 @@ import { camera } from "./camera"
 import { loadMapChuncks, loadMapChuncksBinary } from "./mapLoad";
 import { mapLayer } from "./map"
 import { boundingBox } from "./kdTree";
+import { bufferConstructor } from "./bufferConstructor";
 
 export var gl: WebGL2RenderingContext;
 var renderer: mapRenderer;
@@ -22,6 +23,9 @@ var sideBarElements: any;
 let zoom = 1;
 let targetZoom = 1;
 
+const bbox = { x1: 6429499, y1: 1797629, x2: 6446651, y2: 1805369 }
+const squareBbox = { x1: 6429499, y1: 1792923, x2: 6446651, y2: 1810075 }
+
 function init() {
     canvas = document.createElement("canvas");
     gl = canvas.getContext("webgl2");
@@ -29,15 +33,15 @@ function init() {
         window.alert("this browser does not support webgl 2, try firefox")
     }
     document.body.appendChild(canvas);
-    cam = new camera();
+    cam = new camera(squareBbox);
     sizeCanvas();
     //cam.zoom(0.001, 0, 0);
     mouse.x = canvas.width/2;
     mouse.y = canvas.height/2;
     console.log(performance.now())
-    tileMap = loadMapChuncksBinary("./binaryChuncks") as mapLayer;
+    tileMap = loadMapChuncksBinary("./binaryChuncks", bbox, new bufferConstructor(squareBbox)) as mapLayer;
     //tileMap = loadMapChuncks("./chuncks")
-    featureMap = new mapLayer();
+    featureMap = new mapLayer(bbox, new bufferConstructor(squareBbox));
     renderer = new mapRenderer(gl);
     tileMap.setStyleTableFromArray("polygon", [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.9, 1, 0.8, 0.8, 0.8, 1, 0.9, 0.9, 0.9, 1], [0.9, 0.9, 0.9, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.9, 0.5, 1, 0.9, 0.5, 0.5, 1]);
     tileMap.setStyleTableFromArray("outline", [0, 0, 0.6, 2, 0, 1, 0, 3, 0, 0, 1, 8, 0, 0, 0.6, 2, 0, 0, 0.6, 2], [0.4, 0.2, 0.0, 0, 0, 1, 1, 0, 1, 0, 1, 0,  1, 0, 0, 0, 1, 0, 0, 0]);
@@ -123,7 +127,7 @@ function loop() {
 
 function sprayFeatures(x: number, y: number, radius: number, scale: number, count: number = 1){
     for(let i = 0; i < count; i++){
-        let featureOutline = new Float32Array([0, 0, 0.5, 1, 1, 0])
+        let featureOutline = new Float64Array([0, 0, 0.5, 1, 1, 0])
         let theta = Math.random() * Math.PI * 2;
         let offset = Math.random() * radius;
         for(let i = 0; i < featureOutline.length; i+=2){ 
