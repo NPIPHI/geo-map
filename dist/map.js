@@ -5,6 +5,10 @@ const memory_1 = require("./memory");
 const kdTree_1 = require("./kdTree");
 class mapLayer {
     constructor(name, bBox, bufferConstructor, zIndex = 0) {
+        this.hoverListeners = [];
+        this.mouseoverListeners = [];
+        this.pointerdownListeners = [];
+        this.pointerupListeners = [];
         this.name = name;
         this.bBox = bBox;
         this.zIndex = zIndex;

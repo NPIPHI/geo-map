@@ -8,10 +8,10 @@ export class mapLayer implements Layer{
     private featureTree: BinarySpaceTree<Feature>;
     private bufferConstructor: bufferConstructor;
     private bBox: BoundingBox;
-    private hoverListeners: ((arg0: Feature)=>void)[];
-    private mouseoverListeners: ((arg0: Feature)=>void)[];
-    private pointerdownListeners: ((arg0: Feature)=>void)[];
-    private pointerupListeners: ((arg0: Feature)=>void)[];
+    private hoverListeners: ((arg0: Feature)=>void)[] = [];
+    private mouseoverListeners: ((arg0: Feature)=>void)[] = [];
+    private pointerdownListeners: ((arg0: Feature)=>void)[] = [];
+    private pointerupListeners: ((arg0: Feature)=>void)[] = [];
     zIndex: number;
     name: string;
     outlines: GPUBufferSet;
