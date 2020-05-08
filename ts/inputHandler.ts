@@ -95,6 +95,7 @@ export class inputHandler{
         if (this.mouse.left){
             this.camera.onePointMove(x, y);
         }
+        this.invalidateCanvas();
     }
     private mouseup(x: number, y: number, button: number){
         if(button === 0){
@@ -103,6 +104,7 @@ export class inputHandler{
     }
     private mousewheel(scroll: number){
         this.camera.zoom(Math.pow(1.01, -scroll));
+        this.invalidateCanvas();
     }
     private callListeners(type: "hover" | "mouseover" | "pointerdown" | "pointerup", point: {x: number, y: number}){
         this.targets.forEach(target=>target.callEventListener(type, point));

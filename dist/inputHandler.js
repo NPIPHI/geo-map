@@ -85,6 +85,7 @@ class inputHandler {
         if (this.mouse.left) {
             this.camera.onePointMove(x, y);
         }
+        this.invalidateCanvas();
     }
     mouseup(x, y, button) {
         if (button === 0) {
@@ -93,6 +94,7 @@ class inputHandler {
     }
     mousewheel(scroll) {
         this.camera.zoom(Math.pow(1.01, -scroll));
+        this.invalidateCanvas();
     }
     callListeners(type, point) {
         this.targets.forEach(target => target.callEventListener(type, point));
