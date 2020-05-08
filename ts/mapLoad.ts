@@ -1,5 +1,4 @@
 import { mapLayer } from "./map";
-import { invalidate } from "./main";
 import { Layer, BoundingBox } from "./index";
 import { bufferConstructor } from "./bufferConstructor";
 
@@ -18,12 +17,12 @@ export async function loadMapBinary(): Promise<{ points: Float64Array[], ids: st
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksBinary(dir: string, target: Layer): Promise<void> {
+export function loadMapChuncksBinary(dir: string, target: Layer, partialLoadCallback?: ()=>void): Promise<void> {
     return new Promise(resolve=>{
         fetch(dir + "/meta.json").then(file => file.json().then(meta => {
             let tracker = new loadingTracker(meta.count, resolve);
             for (let i = 0; i < meta.count; i++) {
-                addMapBinary(dir + "/" + i, target).then(tracker.increment);
+                addMapBinary(dir + "/" + i, target).then(()=>{tracker.increment; if(partialLoadCallback) partialLoadCallback()});
             }
         }));
     })
@@ -34,7 +33,6 @@ export async function addMapBinary(path: string, target: Layer): Promise<void> {
         parseMapBinary(path).then(mapData => {
             let time1 = performance.now();
             target.addFeatures(mapData.points, mapData.ids);
-            invalidate();
             console.log(`Adding ${mapData.points.length} features took ${performance.now() - time1} ms`)
             console.log(performance.now())
             resolve();
@@ -130,12 +128,12 @@ async function parseMapJson(path: string = "../mapData/slabs.json"): Promise<{ p
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksJSON(dir: string, target: Layer): Promise<void> {
+export function loadMapChuncksJSON(dir: string, target: Layer, partialLoadCallback?: ()=>void): Promise<void> {
     return new Promise(resolve=>{
         fetch(dir + "/meta.json").then(file => file.json().then(meta => {
             let tracker = new loadingTracker(meta.count, resolve)
             for (let i = 0; i < meta.count; i++) {
-                addMapJson(dir + "/" + i + ".json", target).then(tracker.increment);
+                addMapJson(dir + "/" + i + ".json", target).then(()=>{tracker.increment(); if(partialLoadCallback) partialLoadCallback});
             }
         }));
     })
@@ -146,7 +144,6 @@ export async function addMapJson(path: string, target: Layer): Promise<void> {
         parseMapJson(path).then(mapData => {
             let time1 = performance.now();
             target.addFeatures(mapData.points, mapData.ids);
-            invalidate();
             console.log(`Adding ${mapData.ids.length} features took ${performance.now() - time1} ms`)
             console.log(performance.now())
             resolve();
