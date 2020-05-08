@@ -9,6 +9,9 @@ export class inputHandler{
     private touch2: Touch;
     private newTouch: Touch;
     private invalidate: ()=>void;
+    minimumHoverTime: number = 100;
+    maximumHoverDistance: number = 0;
+    smoothTransitionFactor: number = 1;
     constructor(canvas: HTMLCanvasElement, camera: camera, invalidateCallback: ()=>void){
         this.camera = camera;
         this.mouse = {x: 0, y: 0, left: false, right: false, middle: false};

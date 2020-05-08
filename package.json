@@ -1,12 +1,13 @@
 {
   "name": "mapdraw",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Draw map data with webgl",
   "private": true,
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": "https://github.com/NPIPHI/geo-map",
   "author": "Nicholas Phillips",
   "license": "ISC",
   "dependencies": {
