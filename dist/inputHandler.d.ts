@@ -7,7 +7,8 @@ export declare class inputHandler {
     private touch1;
     private touch2;
     private newTouch;
-    constructor(canvas: HTMLCanvasElement, camera: camera);
+    private invalidate;
+    constructor(canvas: HTMLCanvasElement, camera: camera, invalidateCallback: () => void);
     private invalidateCanvas;
     private touchstart;
     private touchmove;

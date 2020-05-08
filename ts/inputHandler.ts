@@ -8,9 +8,11 @@ export class inputHandler{
     private touch1: Touch;
     private touch2: Touch;
     private newTouch: Touch;
-    constructor(canvas: HTMLCanvasElement, camera: camera){
+    private invalidate: ()=>void;
+    constructor(canvas: HTMLCanvasElement, camera: camera, invalidateCallback: ()=>void){
         this.camera = camera;
         this.mouse = {x: 0, y: 0, left: false, right: false, middle: false};
+        this.invalidate = invalidateCallback;
         canvas.addEventListener("pointerdown", (pointer)=>this.mousedown(pointer.offsetY, pointer.offsetY, pointer.button));
         canvas.addEventListener("pointermove", (pointer)=>this.mousemove(pointer.offsetX, pointer.offsetY));
         canvas.addEventListener("pointerup", (pointer)=>this.mouseup(pointer.offsetX, pointer.offsetY, pointer.button));
@@ -21,7 +23,7 @@ export class inputHandler{
     }
 
     private invalidateCanvas(){
-
+        this.invalidate();
     }
 
     private touchstart(event: TouchEvent){

@@ -1,7 +1,7 @@
 import { Feature } from "./feature";
 import { mapLayer } from "./map";
 import { mapRenderer } from "./renderer";
-import { addMapBinary, addMapJson } from "./mapLoad";
+import { addMapBinary, addMapJson, loadMapChuncksBinary, loadMapChuncksJSON } from "./mapLoad";
 import { bufferConstructor } from "./bufferConstructor";
 import { camera } from "./camera";
 import { inputHandler } from "./inputHandler";
@@ -57,7 +57,14 @@ export class GeoMap{
         this.camera = new camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor(this.squareRegion);
-        this.inputHandler = new inputHandler(canvas, this.camera);
+        this.inputHandler = new inputHandler(canvas, this.camera, this.render);
+    }
+    private render(){
+        this.layers.sort((a, b)=>a.zIndex - b.zIndex);
+        let view = this.camera.view
+        this.layers.forEach(layer=>{
+            this.renderer.renderMap(layer as mapLayer, view, true, true);
+        })
     }
     createLayer(name: string, zIndex: number = 0): Layer {
         return new mapLayer(name, this.bBox, this.bufferConstructor, zIndex);
@@ -72,10 +79,21 @@ export class GeoMap{
             resolve();
         });
     }
-    async addDataJSON(layer: Layer, path: string): Promise<void>{
-        return addMapJson(path, layer);
+    async loadData(layer: Layer, path: string, encoding: "binary" | "json"): Promise<void>{
+        if(encoding === "binary"){
+            return addMapJson(path, layer);
+        }
+        if(encoding === "json"){
+            return addMapBinary(path, layer);
+        }
     }
-    async addDataBinary(layer: Layer, path: string): Promise<void>{
-        return addMapBinary(path, layer);
+
+    async loadDataChuncks(layer: Layer, dir: string, encoding: "binary" | "json"){
+        if(encoding === "binary"){
+            return loadMapChuncksJSON(dir, layer);
+        }
+        if(encoding === "json"){
+            return loadMapChuncksBinary(dir, layer);
+        }
     }
 }

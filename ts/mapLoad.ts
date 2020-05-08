@@ -110,7 +110,7 @@ async function parseMapJson(path: string = "../mapData/slabs.json"): Promise<{ p
     return { points: pointPaths, ids: idList };
 }
 
-export function loadMapChuncksJSON(dir: string, target: mapLayer): void {
+export function loadMapChuncksJSON(dir: string, target: Layer): void {
     fetch(dir + "/meta.json").then(file => file.json().then(meta => {
         for (let i = 0; i < meta.count; i++) {
             addMapJson(dir + "/" + i + ".json", target);

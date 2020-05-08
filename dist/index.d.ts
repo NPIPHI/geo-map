@@ -32,9 +32,10 @@ export declare class GeoMap {
     private bufferConstructor;
     private inputHandler;
     constructor(canvas: HTMLCanvasElement, region: BoundingBox);
+    private render;
     createLayer(name: string, zIndex?: number): Layer;
     addLayer(layer: Layer): void;
     addData(layer: Layer, geometry: Float64Array[], ids: string[]): Promise<void>;
-    addDataJSON(layer: Layer, path: string): Promise<void>;
-    addDataBinary(layer: Layer, path: string): Promise<void>;
+    loadData(layer: Layer, path: string, encoding: "binary" | "json"): Promise<void>;
+    loadDataChuncks(layer: Layer, dir: string, encoding: "binary" | "json"): Promise<void>;
 }

@@ -24,7 +24,14 @@ class GeoMap {
         this.camera = new camera_1.camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor_1.bufferConstructor(this.squareRegion);
-        this.inputHandler = new inputHandler_1.inputHandler(canvas, this.camera);
+        this.inputHandler = new inputHandler_1.inputHandler(canvas, this.camera, this.render);
+    }
+    render() {
+        this.layers.sort((a, b) => a.zIndex - b.zIndex);
+        let view = this.camera.view;
+        this.layers.forEach(layer => {
+            this.renderer.renderMap(layer, view, true, true);
+        });
     }
     createLayer(name, zIndex = 0) {
         return new map_1.mapLayer(name, this.bBox, this.bufferConstructor, zIndex);
@@ -39,11 +46,21 @@ class GeoMap {
             resolve();
         });
     }
-    async addDataJSON(layer, path) {
-        return mapLoad_1.addMapJson(path, layer);
+    async loadData(layer, path, encoding) {
+        if (encoding === "binary") {
+            return mapLoad_1.addMapJson(path, layer);
+        }
+        if (encoding === "json") {
+            return mapLoad_1.addMapBinary(path, layer);
+        }
     }
-    async addDataBinary(layer, path) {
-        return mapLoad_1.addMapBinary(path, layer);
+    async loadDataChuncks(layer, dir, encoding) {
+        if (encoding === "binary") {
+            return mapLoad_1.loadMapChuncksJSON(dir, layer);
+        }
+        if (encoding === "json") {
+            return mapLoad_1.loadMapChuncksBinary(dir, layer);
+        }
     }
 }
 exports.GeoMap = GeoMap;
