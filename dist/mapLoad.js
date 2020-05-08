@@ -16,11 +16,14 @@ async function loadMapBinary() {
 }
 exports.loadMapBinary = loadMapBinary;
 function loadMapChuncksBinary(dir, target) {
-    fetch(dir + "/meta.json").then(file => file.json().then(meta => {
-        for (let i = 0; i < meta.count; i++) {
-            addMapBinary(dir + "/" + i, target);
-        }
-    }));
+    return new Promise(resolve => {
+        fetch(dir + "/meta.json").then(file => file.json().then(meta => {
+            let tracker = new loadingTracker(meta.count, resolve);
+            for (let i = 0; i < meta.count; i++) {
+                addMapBinary(dir + "/" + i, target).then(tracker.increment);
+            }
+        }));
+    });
 }
 exports.loadMapChuncksBinary = loadMapChuncksBinary;
 async function addMapBinary(path, target) {
@@ -81,6 +84,19 @@ class binaryLoader {
         this.resolve = resolve;
     }
 }
+class loadingTracker {
+    constructor(count, callback) {
+        this.callback = callback;
+        this.total = count;
+        this.count = 0;
+    }
+    increment() {
+        this.count++;
+        if (this.count === this.total) {
+            this.callback();
+        }
+    }
+}
 async function parseMapJson(path = "../mapData/slabs.json") {
     let rawData = await fetch(path);
     let jsonData = await rawData.json();
@@ -99,11 +115,14 @@ async function parseMapJson(path = "../mapData/slabs.json") {
     return { points: pointPaths, ids: idList };
 }
 function loadMapChuncksJSON(dir, target) {
-    fetch(dir + "/meta.json").then(file => file.json().then(meta => {
-        for (let i = 0; i < meta.count; i++) {
-            addMapJson(dir + "/" + i + ".json", target);
-        }
-    }));
+    return new Promise(resolve => {
+        fetch(dir + "/meta.json").then(file => file.json().then(meta => {
+            let tracker = new loadingTracker(meta.count, resolve);
+            for (let i = 0; i < meta.count; i++) {
+                addMapJson(dir + "/" + i + ".json", target).then(tracker.increment);
+            }
+        }));
+    });
 }
 exports.loadMapChuncksJSON = loadMapChuncksJSON;
 async function addMapJson(path, target) {

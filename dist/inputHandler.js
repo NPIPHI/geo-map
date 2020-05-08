@@ -2,6 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 class inputHandler {
     constructor(canvas, camera, invalidateCallback) {
+        this.minimumHoverTime = 100;
+        this.maximumHoverDistance = 0;
+        this.smoothTransitionFactor = 1;
         this.camera = camera;
         this.mouse = { x: 0, y: 0, left: false, right: false, middle: false };
         this.invalidate = invalidateCallback;
