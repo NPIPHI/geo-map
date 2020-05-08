@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const feature_1 = require("./feature");
 const memory_1 = require("./memory");
 const kdTree_1 = require("./kdTree");
-const main_1 = require("./main");
 class mapLayer {
     constructor(name, bBox, bufferConstructor, zIndex = 0) {
         this.name = name;
@@ -45,7 +44,6 @@ class mapLayer {
         }
     }
     addFeatures(pointStrips, ids) {
-        main_1.incrementFeatureNumberDisplay(pointStrips.length);
         let outlineMemoryPointers = this.bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines);
         let polygonMemoryPointers = this.bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons);
         for (let i = 0; i < pointStrips.length; i++) {
@@ -53,7 +51,6 @@ class mapLayer {
         }
     }
     addFeature(pointStrip, id) {
-        main_1.incrementFeatureNumberDisplay(1);
         let feature = feature_1.Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
         this.outlines.add(feature.outline);
         this.polygons.add(feature.polygon);
@@ -74,7 +71,6 @@ class mapLayer {
     popByPoint(x, y) {
         let removed = this.featureTree.popFirst(x, y);
         if (removed) {
-            main_1.incrementFeatureNumberDisplay(-1);
             this.polygons.remove(removed.polygon);
             this.outlines.remove(removed.outline);
         }

@@ -1,6 +1,4 @@
-import { mapLayer } from "./map";
-import { Layer, BoundingBox } from "./index";
-import { bufferConstructor } from "./bufferConstructor";
+import { Layer } from "./index";
 
 export async function loadMapBinary(): Promise<{ points: Float64Array[], ids: string[] }> {
     let file = await fetch("../mapData/output.buf");

@@ -1,7 +1,6 @@
 import earcut from "earcut"
 import { GPUBufferSet, GPUMemoryObject } from "./memory"
-import { BoundingBox } from ".";
-import { gl } from "./index"
+import { gl, BoundingBox} from "./index"
 
 function buffer(array: ArrayBuffer) {
     let buf = gl.createBuffer();

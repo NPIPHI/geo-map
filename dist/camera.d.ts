@@ -1,5 +1,5 @@
 import * as matrix from "gl-matrix";
-import { BoundingBox } from ".";
+import { BoundingBox } from "./index";
 export declare class camera {
     private _view;
     private canvasView;

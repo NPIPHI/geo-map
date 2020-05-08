@@ -1,5 +1,5 @@
 import { GPUBufferSet, GPUMemoryObject } from "./memory";
-import { BoundingBox } from ".";
+import { BoundingBox } from "./index";
 export declare class bufferConstructor {
     private xAdd;
     private xScale;

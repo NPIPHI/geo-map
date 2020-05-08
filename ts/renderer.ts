@@ -1,5 +1,4 @@
 import * as shaders from "./shaders.json"
-import { camera } from "./camera"
 import { GPUBufferSet } from "./memory";
 import { mapLayer } from "./map";
 import { mat3 } from "gl-matrix"

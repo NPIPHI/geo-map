@@ -2,7 +2,6 @@ import { Feature } from "./feature";
 import { GPUBufferSet, GPUMemoryPointer, GPUMemoryObject } from "./memory";
 import { bufferConstructor } from "./bufferConstructor";
 import { BinarySpaceTree, boundingBox } from "./kdTree";
-import { incrementFeatureNumberDisplay } from "./main";
 import { Layer, BoundingBox } from "./index";
 
 export class mapLayer implements Layer{
@@ -59,7 +58,6 @@ export class mapLayer implements Layer{
         }
     }
     addFeatures(pointStrips: Float64Array[], ids: string[]) {
-        incrementFeatureNumberDisplay(pointStrips.length);
         let outlineMemoryPointers = this.bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
         let polygonMemoryPointers = this.bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
         for (let i = 0; i < pointStrips.length; i++) {
@@ -69,7 +67,6 @@ export class mapLayer implements Layer{
         }
     }
     addFeature(pointStrip: Float64Array, id: string){
-        incrementFeatureNumberDisplay(1);
         let feature = Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
         this.outlines.add(feature.outline as GPUMemoryObject);
         this.polygons.add(feature.polygon as GPUMemoryObject);
@@ -90,7 +87,6 @@ export class mapLayer implements Layer{
     popByPoint(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
         if (removed) {
-            incrementFeatureNumberDisplay(-1);
             this.polygons.remove(removed.polygon);
             this.outlines.remove(removed.outline);
         } else {
