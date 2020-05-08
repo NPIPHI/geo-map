@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const main_1 = require("./main");
+const index_1 = require("./index");
 const growthRatio = 1.1;
 const preallocatedSize = 0;
 class GPUBufferSet {
@@ -22,18 +22,18 @@ class GPUBufferSet {
     }
     static create(elementWidths) {
         let buffers = elementWidths.map(byteSize => {
-            let buffer = main_1.gl.createBuffer();
-            main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buffer);
-            main_1.gl.bufferData(main_1.gl.ARRAY_BUFFER, preallocatedSize * byteSize, main_1.gl.STATIC_DRAW);
+            let buffer = index_1.gl.createBuffer();
+            index_1.gl.bindBuffer(index_1.gl.ARRAY_BUFFER, buffer);
+            index_1.gl.bufferData(index_1.gl.ARRAY_BUFFER, preallocatedSize * byteSize, index_1.gl.STATIC_DRAW);
             return buffer;
         });
         return new GPUBufferSet(elementWidths, buffers, preallocatedSize);
     }
     static createFromSize(elementWidths, size) {
         let buffers = elementWidths.map(byteSize => {
-            let buffer = main_1.gl.createBuffer();
-            main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buffer);
-            main_1.gl.bufferData(main_1.gl.ARRAY_BUFFER, size * byteSize, main_1.gl.STATIC_DRAW);
+            let buffer = index_1.gl.createBuffer();
+            index_1.gl.bindBuffer(index_1.gl.ARRAY_BUFFER, buffer);
+            index_1.gl.bufferData(index_1.gl.ARRAY_BUFFER, size * byteSize, index_1.gl.STATIC_DRAW);
             return buffer;
         });
         return new GPUBufferSet(elementWidths, buffers, size);
@@ -46,9 +46,9 @@ class GPUBufferSet {
             this.reallocateBuffers(this.head + source.head);
         }
         for (let i = 0; i < this.buffers.length; i++) {
-            main_1.gl.bindBuffer(main_1.gl.COPY_READ_BUFFER, source.buffers[i].buffer);
-            main_1.gl.bindBuffer(main_1.gl.COPY_WRITE_BUFFER, this.buffers[i].buffer);
-            main_1.gl.copyBufferSubData(main_1.gl.COPY_READ_BUFFER, main_1.gl.COPY_WRITE_BUFFER, 0, this.head, source.head * source.buffers[i].byteSize);
+            index_1.gl.bindBuffer(index_1.gl.COPY_READ_BUFFER, source.buffers[i].buffer);
+            index_1.gl.bindBuffer(index_1.gl.COPY_WRITE_BUFFER, this.buffers[i].buffer);
+            index_1.gl.copyBufferSubData(index_1.gl.COPY_READ_BUFFER, index_1.gl.COPY_WRITE_BUFFER, 0, this.head, source.head * source.buffers[i].byteSize);
             source.deleteBuffer(source.buffers[i].buffer);
             source.buffers[i].buffer = null;
         }
@@ -68,7 +68,7 @@ class GPUBufferSet {
     freeGPUMemory() {
         if (this.lockDepth === 0) {
             this.bufferDeleteQueue.forEach(buffer => {
-                main_1.gl.deleteBuffer(buffer);
+                index_1.gl.deleteBuffer(buffer);
             });
             this.bufferDeleteQueue = [];
         }
@@ -152,8 +152,8 @@ class GPUBufferSet {
     }
     update(location, attribute) {
         if (typeof attribute === "number") {
-            main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, this.buffers[attribute].buffer);
-            main_1.gl.bufferSubData(main_1.gl.ARRAY_BUFFER, location.GPUOffset * this.buffers[attribute].byteSize, location.GPUData[attribute]);
+            index_1.gl.bindBuffer(index_1.gl.ARRAY_BUFFER, this.buffers[attribute].buffer);
+            index_1.gl.bufferSubData(index_1.gl.ARRAY_BUFFER, location.GPUOffset * this.buffers[attribute].byteSize, location.GPUData[attribute]);
         }
         else {
             this.putMemory(location);
@@ -166,7 +166,7 @@ class GPUBufferSet {
         this.lockDepth--;
         if (this.lockDepth == 0) {
             this.bufferDeleteQueue.forEach(buffer => {
-                main_1.gl.deleteBuffer(buffer);
+                index_1.gl.deleteBuffer(buffer);
             });
             this.bufferDeleteQueue = [];
         }
@@ -176,11 +176,11 @@ class GPUBufferSet {
     }
     resizeBuffers(size) {
         this.buffers.forEach(buffer => {
-            let newBuffer = main_1.gl.createBuffer();
-            main_1.gl.bindBuffer(main_1.gl.COPY_WRITE_BUFFER, newBuffer);
-            main_1.gl.bufferData(main_1.gl.COPY_WRITE_BUFFER, size * buffer.byteSize, main_1.gl.STATIC_COPY);
-            main_1.gl.bindBuffer(main_1.gl.COPY_READ_BUFFER, buffer.buffer);
-            main_1.gl.copyBufferSubData(main_1.gl.COPY_READ_BUFFER, main_1.gl.COPY_WRITE_BUFFER, 0, 0, this.bufferSize * buffer.byteSize);
+            let newBuffer = index_1.gl.createBuffer();
+            index_1.gl.bindBuffer(index_1.gl.COPY_WRITE_BUFFER, newBuffer);
+            index_1.gl.bufferData(index_1.gl.COPY_WRITE_BUFFER, size * buffer.byteSize, index_1.gl.STATIC_COPY);
+            index_1.gl.bindBuffer(index_1.gl.COPY_READ_BUFFER, buffer.buffer);
+            index_1.gl.copyBufferSubData(index_1.gl.COPY_READ_BUFFER, index_1.gl.COPY_WRITE_BUFFER, 0, 0, this.bufferSize * buffer.byteSize);
             this.deleteBuffer(buffer.buffer);
             buffer.buffer = newBuffer;
         });
@@ -191,14 +191,14 @@ class GPUBufferSet {
             this.bufferDeleteQueue.push(buffer);
         }
         else {
-            main_1.gl.deleteBuffer(buffer);
+            index_1.gl.deleteBuffer(buffer);
         }
     }
     zeroMemory(location) {
         this.buffers.forEach(buffer => {
             let clearMemory = new Float32Array(location.GPUWidth * buffer.byteSize / 4);
-            main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buffer.buffer);
-            main_1.gl.bufferSubData(main_1.gl.ARRAY_BUFFER, buffer.byteSize * location.GPUOffset, clearMemory);
+            index_1.gl.bindBuffer(index_1.gl.ARRAY_BUFFER, buffer.buffer);
+            index_1.gl.bufferSubData(index_1.gl.ARRAY_BUFFER, buffer.byteSize * location.GPUOffset, clearMemory);
         });
     }
     putMemory(memory) {
@@ -209,8 +209,8 @@ class GPUBufferSet {
             this.reallocateBuffers(offset + width);
         }
         for (let i = 0; i < this.buffers.length; i++) {
-            main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, this.buffers[i].buffer);
-            main_1.gl.bufferSubData(main_1.gl.ARRAY_BUFFER, this.buffers[i].byteSize * offset, data[i]);
+            index_1.gl.bindBuffer(index_1.gl.ARRAY_BUFFER, this.buffers[i].buffer);
+            index_1.gl.bufferSubData(index_1.gl.ARRAY_BUFFER, this.buffers[i].byteSize * offset, data[i]);
         }
     }
     fillHole(hole, replace) {

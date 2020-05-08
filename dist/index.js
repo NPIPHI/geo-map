@@ -20,6 +20,7 @@ class GeoMap {
             this.squareRegion = { y1: this.bBox.y1, x1: xCenter - xOffset, y2: this.bBox.y2, x2: xCenter + xOffset };
         }
         this.gl = canvas.getContext("webgl2");
+        exports.gl = this.gl;
         this.renderer = new renderer_1.mapRenderer(this.gl);
         this.camera = new camera_1.camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);

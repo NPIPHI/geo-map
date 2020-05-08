@@ -3,13 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const main_1 = require("./main");
 const earcut_1 = __importDefault(require("earcut"));
 const memory_1 = require("./memory");
+const index_1 = require("./index");
 function buffer(array) {
-    let buf = main_1.gl.createBuffer();
-    main_1.gl.bindBuffer(main_1.gl.ARRAY_BUFFER, buf);
-    main_1.gl.bufferData(main_1.gl.ARRAY_BUFFER, array, main_1.gl.STATIC_DRAW);
+    let buf = index_1.gl.createBuffer();
+    index_1.gl.bindBuffer(index_1.gl.ARRAY_BUFFER, buf);
+    index_1.gl.bufferData(index_1.gl.ARRAY_BUFFER, array, index_1.gl.STATIC_DRAW);
     return buf;
 }
 class bufferConstructor {

@@ -28,7 +28,7 @@ const squareBbox = { x1: 6429499, y1: 1792923, x2: 6446651, y2: 1810075 }
 
 function init() {
     canvas = document.createElement("canvas");
-    gl = canvas.getContext("webgl2");
+    //gl = canvas.getContext("webgl2");
     if(!gl){
         window.alert("this browser does not support webgl 2, try firefox")
     }
