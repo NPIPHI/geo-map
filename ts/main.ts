@@ -152,7 +152,7 @@ function mouseMove(pointer: {x: number, y: number}){
     let adjustedPointer = cam.toWorldSpace(pointer.x, pointer.y);
     if (paintMode) {
         let time1 = performance.now();
-        let selection = tileMap.selectByRectangle(new boundingBox(adjustedPointer.x - 0.05, adjustedPointer.y - 0.05, adjustedPointer.x + 0.05, adjustedPointer.y + 0.05));
+        let selection = tileMap.selectByRectangle(new boundingBox(adjustedPointer.x - 500, adjustedPointer.y - 500, adjustedPointer.x + 500, adjustedPointer.y + 500));
         selection.forEach(ele => {
             tileMap.setStyle(ele, 2);
         })
@@ -161,7 +161,7 @@ function mouseMove(pointer: {x: number, y: number}){
     }
 
     if (sprayMode) {
-        sprayFeatures(adjustedPointer.x, adjustedPointer.y, 0.01, 0.001 * (Math.random() + 0.1), 1);
+        sprayFeatures(adjustedPointer.x, adjustedPointer.y, 100, 10 * (Math.random() + 0.1), 1);
         invalidate();
     }
     let selected = featureMap.selectByPoint(adjustedPointer.x, adjustedPointer.y);
