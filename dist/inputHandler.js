@@ -3,8 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("./index");
 class inputHandler {
     constructor(canvas, camera, invalidateCallback) {
-        this.minimumHoverTime = 100;
-        this.maximumHoverDistance = 0;
+        this.minimumHoverTime = 400;
         this.smoothTransitionFactor = 1;
         this.canvas = canvas;
         this.camera = camera;
@@ -21,9 +20,17 @@ class inputHandler {
         canvas.addEventListener("touchend", event => this.touchend(event));
         window.addEventListener("resize", event => this.resizeCanvas());
     }
+    pollEvents() {
+        if (this.mouse.left && this.lastMouseAction + this.minimumHoverTime < performance.now()) {
+            this.lastMouseAction = Infinity;
+            this.callListeners("hover", this.camera.toWorldSpace(this.mouse.x, this.mouse.y));
+        }
+    }
     resizeCanvas() {
-        this.canvas.width = this.canvas.getBoundingClientRect().width;
-        this.canvas.height = this.canvas.getBoundingClientRect().height;
+        let canvasRect = this.canvas.getBoundingClientRect();
+        this.canvas.width = canvasRect.width;
+        this.canvas.height = canvasRect.height;
+        this.canvasCorner = { x: canvasRect.left, y: canvasRect.top };
         this.camera.setAespectRatio(this.canvas.width, this.canvas.height);
         index_1.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.invalidateCanvas();
@@ -32,25 +39,30 @@ class inputHandler {
         this.invalidate();
     }
     touchstart(event) {
-        event.preventDefault();
         this.updateTouches(event);
         if (!this.touch1) {
             this.touch1 = this.newTouch;
+            this.mouse.x = this.touch1.clientX - this.canvas.getBoundingClientRect().x;
+            this.mouse.y = this.touch1.clientY - this.canvas.getBoundingClientRect().x;
         }
         else if (!this.touch2) {
             this.touch2 = this.newTouch;
-            this.camera.twoPointDown({ x: this.touch1.clientX, y: this.touch1.clientY }, { x: this.touch2.clientX, y: this.touch2.clientY });
+            this.camera.twoPointDown(this.offsetPoint(this.touch1), this.offsetPoint(this.touch2));
             this.invalidateCanvas();
         }
+    }
+    offsetPoint(touch) {
+        return { x: touch.clientX - this.canvasCorner.x, y: touch.clientY - this.canvasCorner.y };
     }
     touchmove(event) {
         this.updateTouches(event);
         event.preventDefault();
         if (this.touch1 && !this.touch2) {
-            this.mousemove(this.touch1.clientX, this.touch1.clientY);
+            let correctedPoint = this.offsetPoint(this.touch1);
+            this.mousemove(correctedPoint.x, correctedPoint.y);
         }
         if (this.touch1 && this.touch2) {
-            this.camera.twoPointMove({ x: this.touch1.clientX, y: this.touch1.clientY }, { x: this.touch2.clientX, y: this.touch2.clientY });
+            this.camera.twoPointMove(this.offsetPoint(this.touch1), this.offsetPoint(this.touch2));
             this.invalidateCanvas();
         }
     }
@@ -86,25 +98,29 @@ class inputHandler {
     }
     mousedown(x, y, button) {
         this.mouse.x = x;
-        this.mouse.y = x;
+        this.mouse.y = y;
+        this.lastMouseAction = performance.now();
         if (button === 0) {
             this.camera.onePointDown(x, y);
             this.mouse.left = true;
-            this.callListeners("pointerdown", { x, y });
+            let worldPoint = this.camera.toWorldSpace(x, y);
+            this.callListeners("pointerdown", worldPoint);
         }
-        console.log("touched");
     }
     mousemove(x, y) {
         this.mouse.x = x;
         this.mouse.y = y;
+        this.lastMouseAction = performance.now();
         if (this.mouse.left) {
             this.camera.onePointMove(x, y);
             this.invalidateCanvas();
         }
     }
     mouseup(x, y, button) {
+        this.lastMouseAction = performance.now();
         if (button === 0) {
             this.mouse.left = false;
+            this.callListeners("pointerup", this.camera.toWorldSpace(x, y));
         }
     }
     mousewheel(scroll) {

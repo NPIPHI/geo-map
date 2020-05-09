@@ -32,6 +32,7 @@ class GeoMap {
         this.loop();
     }
     loop() {
+        this.inputHandler.pollEvents();
         if (this.invalidated) {
             this.render();
             this.invalidated = false;
@@ -50,7 +51,7 @@ class GeoMap {
         });
     }
     createLayer(name, zIndex = 0) {
-        return new map_1.mapLayer(name, this.bBox, this.bufferConstructor, zIndex);
+        return new map_1.mapLayer(name, this.bBox, this.bufferConstructor, this.invalidate.bind(this), zIndex);
     }
     addLayer(layer) {
         this.layers.push(layer);

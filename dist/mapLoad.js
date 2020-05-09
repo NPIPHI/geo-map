@@ -20,7 +20,7 @@ function loadMapChuncksBinary(dir, target, partialLoadCallback) {
             let tracker = new loadingTracker(meta.count, resolve);
             for (let i = 0; i < meta.count; i++) {
                 addMapBinary(dir + "/" + i, target).then(() => {
-                    tracker.increment;
+                    tracker.increment();
                     if (partialLoadCallback)
                         partialLoadCallback();
                 });

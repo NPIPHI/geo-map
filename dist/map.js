@@ -4,7 +4,7 @@ const feature_1 = require("./feature");
 const memory_1 = require("./memory");
 const kdTree_1 = require("./kdTree");
 class mapLayer {
-    constructor(name, bBox, bufferConstructor, zIndex = 0) {
+    constructor(name, bBox, bufferConstructor, invalidateCallback, zIndex = 0) {
         this.hoverListeners = [];
         this.mouseoverListeners = [];
         this.pointerdownListeners = [];
@@ -14,6 +14,7 @@ class mapLayer {
         this.zIndex = zIndex;
         this.outlines = memory_1.GPUBufferSet.create([2 * 4, 2 * 4, 1 * 4]);
         this.polygons = memory_1.GPUBufferSet.create([2 * 4, 1 * 4]);
+        this.invalidateCallback = invalidateCallback;
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] };
         this.featureTree = new kdTree_1.BinarySpaceTree(new kdTree_1.boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
         this.bufferConstructor = bufferConstructor;
@@ -53,12 +54,14 @@ class mapLayer {
         for (let i = 0; i < pointStrips.length; i++) {
             this.featureTree.insert(new feature_1.Feature(pointStrips[i], ids[i], new memory_1.GPUMemoryPointer(outlineMemoryPointers.offsets[i], outlineMemoryPointers.widths[i]), new memory_1.GPUMemoryPointer(polygonMemoryPointers.offsets[i], polygonMemoryPointers.widths[i])));
         }
+        this.invalidateCallback();
     }
     addFeature(pointStrip, id) {
         let feature = feature_1.Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
         this.outlines.add(feature.outline);
         this.polygons.add(feature.polygon);
         this.featureTree.insert(feature);
+        this.invalidateCallback();
     }
     selectByPoint(x, y) {
         return this.featureTree.findFirst(x, y);
@@ -71,6 +74,7 @@ class mapLayer {
     }
     remove(feature) {
         this.featureTree.remove(feature);
+        this.invalidateCallback();
     }
     popByPoint(x, y) {
         let removed = this.featureTree.popFirst(x, y);
@@ -81,6 +85,7 @@ class mapLayer {
         else {
             console.warn("No feature in selected location");
         }
+        this.invalidateCallback();
     }
     setStyle(feature, style) {
         if (feature === undefined) {
@@ -109,6 +114,7 @@ class mapLayer {
             feature.polygon.GPUData[1] = styleData;
         }
         this.polygons.update(feature.polygon, 1);
+        this.invalidateCallback();
     }
     setStyleTable(type, zoomLevel, styleIndex, r, g, b, thickness) {
         if (type === "polygon") {
@@ -138,6 +144,7 @@ class mapLayer {
                 }
             }
         }
+        this.invalidateCallback();
     }
     setStyleTableFromArray(type, zoomInArray, zoomOutArray, offset = 0) {
         if (type === "polygon") {
@@ -148,6 +155,7 @@ class mapLayer {
             this.styleTable.outline[0].set(zoomInArray, offset);
             this.styleTable.outline[1].set(zoomOutArray, offset);
         }
+        this.invalidateCallback();
     }
 }
 exports.mapLayer = mapLayer;
