@@ -21,7 +21,6 @@ export declare class bufferConstructor {
         offsets: Int32Array;
         widths: Int32Array;
     };
-    featureLineBuffer(strip: ArrayLike<number>): GPUMemoryObject;
-    featurePolygonBuffer(strip: ArrayLike<number>): GPUMemoryObject;
-    featureOutlineBuffer(strip: ArrayLike<number>): GPUMemoryObject;
+    featurePolygonBuffer(strip: ArrayLike<number>, style?: number): GPUMemoryObject;
+    featureOutlineBuffer(strip: ArrayLike<number>, style?: number): GPUMemoryObject;
 }

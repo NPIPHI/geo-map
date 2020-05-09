@@ -18,9 +18,10 @@ export interface BoundingBox {
 export interface Layer {
     zIndex: number;
     name: string;
-    addFeatures(pointStrips: Float64Array[], ids: string[]): void;
+    addFeatures(pointStrips: ArrayLike<number>[], ids: string[]): void;
     addFeature(feature: Feature): void;
-    createFeature(pointStrip: Float64Array, id: string): Feature;
+    createFeature(pointStrip: ArrayLike<number>, id: string): Feature;
+    updateFeature(feature: Feature, newPointStrip: ArrayLike<number>, style: number): void;
     selectByPoint(x: number, y: number): Feature;
     selectByRectangle(boundingBox: BoundingBox): Feature[];
     selectByID(id: string): Feature;

@@ -65,6 +65,16 @@ class mapLayer {
         this.featureTree.insert(feature);
         this.invalidateCallback();
     }
+    updateFeature(feature, newPointStrip, newStyle) {
+        let outline = this.bufferConstructor.featureOutlineBuffer(newPointStrip, newStyle);
+        let poly = this.bufferConstructor.featureOutlineBuffer(newPointStrip, newStyle);
+        this.polygons.remove(feature.polygon);
+        this.outlines.remove(feature.outline);
+        feature.polygon = poly;
+        feature.outline = outline;
+        this.polygons.add(feature.polygon);
+        this.outlines.add(feature.polygon);
+    }
     selectByPoint(x, y) {
         return this.featureTree.findFirst(x, y);
     }

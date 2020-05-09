@@ -179,35 +179,16 @@ class bufferConstructor {
         target.addRaw([vertexArray, styleArray]);
         return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths };
     }
-    featureLineBuffer(strip) {
-        let length = strip.length * 2;
-        let vertexArray = new Float32Array(length * 2);
-        let colorArray = new Float32Array(length * 3);
-        let index = 0;
-        for (let i = 0; i < strip.length - 1; i += 2) {
-            vertexArray[index] = (strip[i] + this.xAdd) * this.xScale;
-            vertexArray[index + 1] = (strip[i + 1] + this.yAdd) * this.yScale;
-            vertexArray[index + 2] = (strip[i + 2] + this.xAdd) * this.xScale;
-            vertexArray[index + 3] = (strip[i + 3] + this.yAdd) * this.yScale;
-            index += 4;
-        }
-        vertexArray[index] = strip[strip.length - 2];
-        vertexArray[index + 1] = strip[strip.length - 1];
-        vertexArray[index + 2] = strip[0];
-        vertexArray[index + 3] = strip[1];
-        index += 4;
-        for (let i = 0; i < colorArray.length; i += 3) {
-            colorArray[i] = 1;
-            colorArray[i + 1] = 1;
-            colorArray[i + 2] = 1;
-        }
-        return new memory_1.GPUMemoryObject(length, [vertexArray, colorArray]);
-    }
-    featurePolygonBuffer(strip) {
+    featurePolygonBuffer(strip, style = 0) {
         let polygonIndexBuffer = earcut_1.default(strip);
         let length = polygonIndexBuffer.length;
         let vertexArray = new Float32Array(length * 2);
         let styleArray = new Float32Array(length);
+        if (style != 0) {
+            for (let i = 0; i < styleArray.length; i++) {
+                styleArray[i] = style;
+            }
+        }
         let vIndex = 0;
         let cIndex = 0;
         for (let i = 0; i < polygonIndexBuffer.length; i += 3) {
@@ -228,11 +209,16 @@ class bufferConstructor {
         }
         return new memory_1.GPUMemoryObject(length, [vertexArray, styleArray]);
     }
-    featureOutlineBuffer(strip) {
+    featureOutlineBuffer(strip, style = 0) {
         let length = strip.length + 4;
         let vertexArray = new Float32Array(length * 2);
         let normalArray = new Float32Array(length * 2);
         let styleArray = new Int32Array(length);
+        if (style != 0) {
+            for (let i = 0; i < styleArray.length; i++) {
+                styleArray[i] = style;
+            }
+        }
         let vIndex = 0;
         let nIndex = 0;
         let cIndex = 0;
