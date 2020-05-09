@@ -19,7 +19,8 @@ export interface Layer {
     zIndex: number;
     name: string;
     addFeatures(pointStrips: Float64Array[], ids: string[]): void;
-    addFeature(pointStrip: Float64Array, id: string): void;
+    addFeature(feature: Feature): void;
+    createFeature(pointStrip: Float64Array, id: string): Feature;
     selectByPoint(x: number, y: number): Feature;
     selectByRectangle(boundingBox: BoundingBox): Feature[];
     selectByID(id: string): Feature;

@@ -27,7 +27,7 @@ export class mapLayer implements Layer{
         this.polygons = GPUBufferSet.create([2*4, 1*4]);
         this.invalidateCallback = invalidateCallback;
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] }
-        this.featureTree = new BinarySpaceTree(new boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
+        this.featureTree = new BinarySpaceTree<Feature>(new boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
         this.bufferConstructor = bufferConstructor
     }
     addEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", callback: (arg0: Feature)=>void){
@@ -59,7 +59,7 @@ export class mapLayer implements Layer{
             this.pointerupListeners.forEach(listener=>listener(selectedFeature))
         }
     }
-    addFeatures(pointStrips: Float64Array[], ids: string[]) {
+    addFeatures(pointStrips: ArrayLike<number>[], ids: string[]) {
         let outlineMemoryPointers = this.bufferConstructor.inPlaceOutlineBuffer(pointStrips, this.outlines)
         let polygonMemoryPointers = this.bufferConstructor.inPlacePolygonBuffer(pointStrips, this.polygons)
         for (let i = 0; i < pointStrips.length; i++) {
@@ -69,8 +69,10 @@ export class mapLayer implements Layer{
         }
         this.invalidateCallback();
     }
-    addFeature(pointStrip: Float64Array, id: string){
-        let feature = Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
+    createFeature(pointStrip: ArrayLike<number>, id: string){
+        return Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
+    }
+    addFeature(feature: Feature): void{
         this.outlines.add(feature.outline as GPUMemoryObject);
         this.polygons.add(feature.polygon as GPUMemoryObject);
         this.featureTree.insert(feature);

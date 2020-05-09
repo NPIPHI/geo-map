@@ -56,8 +56,10 @@ class mapLayer {
         }
         this.invalidateCallback();
     }
-    addFeature(pointStrip, id) {
-        let feature = feature_1.Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
+    createFeature(pointStrip, id) {
+        return feature_1.Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
+    }
+    addFeature(feature) {
         this.outlines.add(feature.outline);
         this.polygons.add(feature.polygon);
         this.featureTree.insert(feature);

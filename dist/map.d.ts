@@ -26,8 +26,9 @@ export declare class mapLayer implements Layer {
         x: number;
         y: number;
     }): void;
-    addFeatures(pointStrips: Float64Array[], ids: string[]): void;
-    addFeature(pointStrip: Float64Array, id: string): void;
+    addFeatures(pointStrips: ArrayLike<number>[], ids: string[]): void;
+    createFeature(pointStrip: ArrayLike<number>, id: string): Feature;
+    addFeature(feature: Feature): void;
     selectByPoint(x: number, y: number): Feature | undefined;
     selectByRectangle(bBox: boundingBox): Feature[];
     selectByID(id: string): Feature;
