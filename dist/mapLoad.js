@@ -19,8 +19,11 @@ function loadMapChuncksBinary(dir, target, partialLoadCallback) {
         fetch(dir + "/meta.json").then(file => file.json().then(meta => {
             let tracker = new loadingTracker(meta.count, resolve);
             for (let i = 0; i < meta.count; i++) {
-                addMapBinary(dir + "/" + i, target).then(() => { tracker.increment; if (partialLoadCallback)
-                    partialLoadCallback(); });
+                addMapBinary(dir + "/" + i, target).then(() => {
+                    tracker.increment;
+                    if (partialLoadCallback)
+                        partialLoadCallback();
+                });
             }
         }));
     });
@@ -118,8 +121,11 @@ function loadMapChuncksJSON(dir, target, partialLoadCallback) {
         fetch(dir + "/meta.json").then(file => file.json().then(meta => {
             let tracker = new loadingTracker(meta.count, resolve);
             for (let i = 0; i < meta.count; i++) {
-                addMapJson(dir + "/" + i + ".json", target).then(() => { tracker.increment(); if (partialLoadCallback)
-                    partialLoadCallback; });
+                addMapJson(dir + "/" + i + ".json", target).then(() => {
+                    tracker.increment();
+                    if (partialLoadCallback)
+                        partialLoadCallback;
+                });
             }
         }));
     });

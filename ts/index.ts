@@ -1,7 +1,7 @@
 import { Feature } from "./feature";
 import { mapLayer } from "./map";
 import { mapRenderer } from "./renderer";
-import { addMapBinary, addMapJson, loadMapChuncksBinary, loadMapChuncksJSON } from "./mapLoad";
+import { addMapBinary, addMapJson, loadMapChuncksBinary, loadMapChuncksJSON, loadMapBinary } from "./mapLoad";
 import { bufferConstructor } from "./bufferConstructor";
 import { camera } from "./camera";
 import { inputHandler } from "./inputHandler";
@@ -28,6 +28,7 @@ export interface Layer {
     addEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", callback: (arg0: Feature)=>void): void;
     callEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", point: {x: number, y: number}): void;
     setStyleTable(type: "polygon" | "outline", zoomLevel: "in" | "out", styleIndex: number, r: number, g: number, b: number, thickness?: number): void;
+    setStyleTableFromArray(type: "polygon" | "outline", inArray: number[], outArray: number[]): void;
 }
 
 export class GeoMap{
@@ -39,12 +40,15 @@ export class GeoMap{
     private camera: camera;
     private bufferConstructor: bufferConstructor;
     private inputHandler: inputHandler;
+    private canvas: HTMLCanvasElement;
+    private invalidated: boolean = false;
     constructor(canvas: HTMLCanvasElement, region: BoundingBox){
         //region represents the bounding box containing the elemnts of the map
         //accurate region information improves feature selection performance (~10x)
         //it is possible to add elements outside of the region
         //the view is automaticly set to show the region
         this.bBox = region;
+        this.canvas = canvas;
         if(this.bBox.x2 - this.bBox.x1 > this.bBox.y2 - this.bBox.y1){
             let yCenter = (this.bBox.y1 + this.bBox.y2)/2;
             let yOffset = (this.bBox.x2 - this.bBox.x1)/2;
@@ -60,11 +64,26 @@ export class GeoMap{
         this.camera = new camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor(this.squareRegion);
-        this.inputHandler = new inputHandler(canvas, this.camera, this.render.bind(this));
+        this.inputHandler = new inputHandler(canvas, this.camera, this.invalidate.bind(this));
+        this.loop();
     }
+
+    private loop(){
+        if(this.invalidated){
+            this.render();
+            this.invalidated = false;
+        }
+        requestAnimationFrame(this.loop.bind(this));
+    }
+
+    private invalidate(){
+        this.invalidated = true;
+    }
+
     private render(){
         this.layers.sort((a, b)=>a.zIndex - b.zIndex);
         let view = this.camera.view
+        this.renderer.clear();
         this.layers.forEach(layer=>{
             this.renderer.renderMap(layer as mapLayer, view, true, true);
         })
@@ -79,24 +98,31 @@ export class GeoMap{
     async addData(layer: Layer, geometry: Float64Array[], ids: string[]): Promise<void>{
         return new Promise(resolve=>{
             layer.addFeatures(geometry, ids);
+            this.invalidate();
             resolve();
         });
     }
     async loadData(layer: Layer, path: string, encoding: "binary" | "json"): Promise<void>{
+        let invalidate = this.invalidate.bind(this);
         if(encoding === "binary"){
-            return addMapBinary(path, layer);
+            return new Promise(resolve=>{
+                addMapBinary(path, layer).then(()=>{invalidate(); resolve()});
+            });
         }
         if(encoding === "json"){
-            return addMapJson(path, layer);
+            return new Promise(resolve=>{
+                addMapJson(path, layer).then(()=>{invalidate(); resolve()});
+            });
         }
     }
 
     async loadDataChuncks(layer: Layer, dir: string, encoding: "binary" | "json"): Promise<void>{
+        let invalidate = this.invalidate.bind(this);
         if(encoding === "binary"){
-            return loadMapChuncksBinary(dir, layer);
+            return loadMapChuncksBinary(dir, layer, invalidate);
         }
         if(encoding === "json"){
-            return loadMapChuncksBinary(dir, layer);
+            return loadMapChuncksJSON(dir, layer, invalidate);
         }
     }
 }

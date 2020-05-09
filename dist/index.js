@@ -9,7 +9,9 @@ const inputHandler_1 = require("./inputHandler");
 class GeoMap {
     constructor(canvas, region) {
         this.layers = [];
+        this.invalidated = false;
         this.bBox = region;
+        this.canvas = canvas;
         if (this.bBox.x2 - this.bBox.x1 > this.bBox.y2 - this.bBox.y1) {
             let yCenter = (this.bBox.y1 + this.bBox.y2) / 2;
             let yOffset = (this.bBox.x2 - this.bBox.x1) / 2;
@@ -26,11 +28,23 @@ class GeoMap {
         this.camera = new camera_1.camera(this.squareRegion);
         this.camera.setAespectRatio(canvas.width, canvas.height);
         this.bufferConstructor = new bufferConstructor_1.bufferConstructor(this.squareRegion);
-        this.inputHandler = new inputHandler_1.inputHandler(canvas, this.camera, this.render.bind(this));
+        this.inputHandler = new inputHandler_1.inputHandler(canvas, this.camera, this.invalidate.bind(this));
+        this.loop();
+    }
+    loop() {
+        if (this.invalidated) {
+            this.render();
+            this.invalidated = false;
+        }
+        requestAnimationFrame(this.loop.bind(this));
+    }
+    invalidate() {
+        this.invalidated = true;
     }
     render() {
         this.layers.sort((a, b) => a.zIndex - b.zIndex);
         let view = this.camera.view;
+        this.renderer.clear();
         this.layers.forEach(layer => {
             this.renderer.renderMap(layer, view, true, true);
         });
@@ -45,23 +59,30 @@ class GeoMap {
     async addData(layer, geometry, ids) {
         return new Promise(resolve => {
             layer.addFeatures(geometry, ids);
+            this.invalidate();
             resolve();
         });
     }
     async loadData(layer, path, encoding) {
+        let invalidate = this.invalidate.bind(this);
         if (encoding === "binary") {
-            return mapLoad_1.addMapBinary(path, layer);
+            return new Promise(resolve => {
+                mapLoad_1.addMapBinary(path, layer).then(() => { invalidate(); resolve(); });
+            });
         }
         if (encoding === "json") {
-            return mapLoad_1.addMapJson(path, layer);
+            return new Promise(resolve => {
+                mapLoad_1.addMapJson(path, layer).then(() => { invalidate(); resolve(); });
+            });
         }
     }
     async loadDataChuncks(layer, dir, encoding) {
+        let invalidate = this.invalidate.bind(this);
         if (encoding === "binary") {
-            return mapLoad_1.loadMapChuncksBinary(dir, layer);
+            return mapLoad_1.loadMapChuncksBinary(dir, layer, invalidate);
         }
         if (encoding === "json") {
-            return mapLoad_1.loadMapChuncksBinary(dir, layer);
+            return mapLoad_1.loadMapChuncksJSON(dir, layer, invalidate);
         }
     }
 }

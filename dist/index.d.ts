@@ -22,6 +22,7 @@ export interface Layer {
         y: number;
     }): void;
     setStyleTable(type: "polygon" | "outline", zoomLevel: "in" | "out", styleIndex: number, r: number, g: number, b: number, thickness?: number): void;
+    setStyleTableFromArray(type: "polygon" | "outline", inArray: number[], outArray: number[]): void;
 }
 export declare class GeoMap {
     layers: Layer[];
@@ -32,7 +33,11 @@ export declare class GeoMap {
     private camera;
     private bufferConstructor;
     private inputHandler;
+    private canvas;
+    private invalidated;
     constructor(canvas: HTMLCanvasElement, region: BoundingBox);
+    private loop;
+    private invalidate;
     private render;
     createLayer(name: string, zIndex?: number): Layer;
     addLayer(layer: Layer): void;

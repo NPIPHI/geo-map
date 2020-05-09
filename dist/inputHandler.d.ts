@@ -8,10 +8,12 @@ export declare class inputHandler {
     private touch2;
     private newTouch;
     private invalidate;
+    private canvas;
     minimumHoverTime: number;
     maximumHoverDistance: number;
     smoothTransitionFactor: number;
     constructor(canvas: HTMLCanvasElement, camera: camera, invalidateCallback: () => void);
+    private resizeCanvas;
     private invalidateCanvas;
     private touchstart;
     private touchmove;

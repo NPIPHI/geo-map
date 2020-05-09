@@ -1,21 +1,32 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const index_1 = require("./index");
 class inputHandler {
     constructor(canvas, camera, invalidateCallback) {
         this.minimumHoverTime = 100;
         this.maximumHoverDistance = 0;
         this.smoothTransitionFactor = 1;
+        this.canvas = canvas;
         this.camera = camera;
         this.mouse = { x: 0, y: 0, left: false, right: false, middle: false };
         this.targets = [];
         this.invalidate = invalidateCallback;
-        canvas.addEventListener("pointerdown", (pointer) => this.mousedown(pointer.offsetY, pointer.offsetY, pointer.button));
+        this.resizeCanvas();
+        canvas.addEventListener("pointerdown", (pointer) => this.mousedown(pointer.offsetX, pointer.offsetY, pointer.button));
         canvas.addEventListener("pointermove", (pointer) => this.mousemove(pointer.offsetX, pointer.offsetY));
         canvas.addEventListener("pointerup", (pointer) => this.mouseup(pointer.offsetX, pointer.offsetY, pointer.button));
         canvas.addEventListener("wheel", (pointer) => this.mousewheel(pointer.deltaY));
         canvas.addEventListener("touchstart", event => this.touchstart(event));
         canvas.addEventListener("touchmove", event => this.touchmove(event));
         canvas.addEventListener("touchend", event => this.touchend(event));
+        window.addEventListener("resize", event => this.resizeCanvas());
+    }
+    resizeCanvas() {
+        this.canvas.width = this.canvas.getBoundingClientRect().width;
+        this.canvas.height = this.canvas.getBoundingClientRect().height;
+        this.camera.setAespectRatio(this.canvas.width, this.canvas.height);
+        index_1.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.invalidateCanvas();
     }
     invalidateCanvas() {
         this.invalidate();
@@ -34,6 +45,10 @@ class inputHandler {
     }
     touchmove(event) {
         this.updateTouches(event);
+        event.preventDefault();
+        if (this.touch1 && !this.touch2) {
+            this.mousemove(this.touch1.clientX, this.touch1.clientY);
+        }
         if (this.touch1 && this.touch2) {
             this.camera.twoPointMove({ x: this.touch1.clientX, y: this.touch1.clientY }, { x: this.touch2.clientX, y: this.touch2.clientY });
             this.invalidateCanvas();
@@ -84,8 +99,8 @@ class inputHandler {
         this.mouse.y = y;
         if (this.mouse.left) {
             this.camera.onePointMove(x, y);
+            this.invalidateCanvas();
         }
-        this.invalidateCanvas();
     }
     mouseup(x, y, button) {
         if (button === 0) {
@@ -93,7 +108,7 @@ class inputHandler {
         }
     }
     mousewheel(scroll) {
-        this.camera.zoom(Math.pow(1.01, -scroll));
+        this.camera.zoom(Math.pow(1.01, -scroll), this.mouse.x, this.mouse.y);
         this.invalidateCanvas();
     }
     callListeners(type, point) {

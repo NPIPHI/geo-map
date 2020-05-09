@@ -15,7 +15,4 @@
     "include": [
         "ts/*"
     ],
-    "exclude": [
-        "ts/main.ts"
-    ]
 }

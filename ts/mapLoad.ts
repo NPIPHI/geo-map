@@ -20,7 +20,10 @@ export function loadMapChuncksBinary(dir: string, target: Layer, partialLoadCall
         fetch(dir + "/meta.json").then(file => file.json().then(meta => {
             let tracker = new loadingTracker(meta.count, resolve);
             for (let i = 0; i < meta.count; i++) {
-                addMapBinary(dir + "/" + i, target).then(()=>{tracker.increment; if(partialLoadCallback) partialLoadCallback()});
+                addMapBinary(dir + "/" + i, target).then(()=>{
+                    tracker.increment;
+                    if(partialLoadCallback) partialLoadCallback()
+                });
             }
         }));
     })
@@ -131,7 +134,10 @@ export function loadMapChuncksJSON(dir: string, target: Layer, partialLoadCallba
         fetch(dir + "/meta.json").then(file => file.json().then(meta => {
             let tracker = new loadingTracker(meta.count, resolve)
             for (let i = 0; i < meta.count; i++) {
-                addMapJson(dir + "/" + i + ".json", target).then(()=>{tracker.increment(); if(partialLoadCallback) partialLoadCallback});
+                addMapJson(dir + "/" + i + ".json", target).then(()=>{
+                    tracker.increment(); 
+                    if(partialLoadCallback) partialLoadCallback
+                });
             }
         }));
     })
