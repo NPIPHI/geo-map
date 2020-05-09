@@ -79,14 +79,14 @@ export class mapLayer implements Layer{
         this.invalidateCallback();
     }
     updateFeature(feature: Feature, newPointStrip: ArrayLike<number>, newStyle: number): void{
-        let outline = this.bufferConstructor.featureOutlineBuffer(newPointStrip, newStyle);
-        let poly = this.bufferConstructor.featureOutlineBuffer(newPointStrip, newStyle);
         this.polygons.remove(feature.polygon);
         this.outlines.remove(feature.outline);
+        let outline = this.bufferConstructor.featureOutlineBuffer(newPointStrip, newStyle);
+        let poly = this.bufferConstructor.featureOutlineBuffer(newPointStrip, newStyle);
         feature.polygon = poly;
         feature.outline = outline;
         this.polygons.add(feature.polygon);
-        this.outlines.add(feature.polygon);
+        this.outlines.add(feature.outline);
     }
     selectByPoint(x: number, y: number): Feature | undefined {
         return this.featureTree.findFirst(x, y) as Feature;
