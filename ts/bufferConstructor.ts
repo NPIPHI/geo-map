@@ -23,7 +23,7 @@ export class bufferConstructor {
             console.warn("Non square bounds detected, rendering will be stretched")
         }
     }
-    lineBuffer(pointStrips: Float64Array[]): { buffer: GPUBufferSet, features: { offsets: Int32Array, widths: Int32Array } } {
+    lineBuffer(pointStrips: ArrayLike<number>[]): { buffer: GPUBufferSet, features: { offsets: Int32Array, widths: Int32Array } } {
         let length = 0;
         pointStrips.forEach(strip => {
             length += strip.length * 2;
@@ -65,7 +65,7 @@ export class bufferConstructor {
         return { buffer: GPUBufferSet.createFromBuffers([2 * 4, 3 * 4], [vertexBuffer, colorBuffer], length), features: { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths } }
     }
 
-    inPlaceOutlineBuffer(pointStrips: Float64Array[], target: GPUBufferSet): { offsets: Int32Array, widths: Int32Array } {
+    inPlaceOutlineBuffer(pointStrips: ArrayLike<number>[], target: GPUBufferSet): { offsets: Int32Array, widths: Int32Array } {
         let length = pointStrips.reduce((length, strip) => length + strip.length + 4, 0);
         let GPUMemoryOffsets = new Int32Array(pointStrips.length);
         let GPUMemoryWidths = new Int32Array(pointStrips.length);
@@ -155,7 +155,7 @@ export class bufferConstructor {
         return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths };
     }
 
-    inPlacePolygonBuffer(pointStrips: Float64Array[], target: GPUBufferSet): { offsets: Int32Array, widths: Int32Array } {
+    inPlacePolygonBuffer(pointStrips: ArrayLike<number>[], target: GPUBufferSet): { offsets: Int32Array, widths: Int32Array } {
         let polygonIndexBuffer: number[][] = [];
         let length = 0;
         pointStrips.forEach(strip => {
@@ -204,7 +204,7 @@ export class bufferConstructor {
         return { offsets: GPUMemoryOffsets, widths: GPUMemoryWidths }
     }
 
-    featureLineBuffer(strip: Float64Array): GPUMemoryObject {
+    featureLineBuffer(strip: ArrayLike<number>): GPUMemoryObject {
         let length = strip.length * 2; //2 points per line
         let vertexArray = new Float32Array(length * 2);
         let colorArray = new Float32Array(length * 3);
@@ -232,7 +232,7 @@ export class bufferConstructor {
         return new GPUMemoryObject(length, [vertexArray, colorArray]);
     }
 
-    featurePolygonBuffer(strip: Float64Array): GPUMemoryObject {
+    featurePolygonBuffer(strip: ArrayLike<number>): GPUMemoryObject {
         let polygonIndexBuffer: number[] = earcut(strip);
         let length = polygonIndexBuffer.length;
         let vertexArray = new Float32Array(length * 2);
@@ -261,7 +261,7 @@ export class bufferConstructor {
         return new GPUMemoryObject(length, [vertexArray, styleArray]);
     }
 
-    featureOutlineBuffer(strip: Float64Array): GPUMemoryObject {
+    featureOutlineBuffer(strip: ArrayLike<number>): GPUMemoryObject {
         let length = strip.length + 4;
         let vertexArray = new Float32Array(length * 2);
         let normalArray = new Float32Array(length * 2);

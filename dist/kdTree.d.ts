@@ -1,6 +1,6 @@
 export interface spatialElement {
     bBox: boundingBox;
-    shape: Float64Array;
+    shape: ArrayLike<number>;
     id: string;
 }
 export declare class boundingBox {

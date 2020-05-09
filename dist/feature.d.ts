@@ -6,7 +6,7 @@ export declare class Feature implements spatialElement {
     outline: GPUMemoryObject | GPUMemoryPointer;
     polygon: GPUMemoryObject | GPUMemoryPointer;
     bBox: boundingBox;
-    shape: Float64Array;
-    constructor(strip: Float64Array, id: string, outline: GPUMemoryObject | GPUMemoryPointer, polygon: GPUMemoryObject | GPUMemoryPointer);
-    static fromPointStrip(strip: Float64Array, id: string, constructor: bufferConstructor): Feature;
+    shape: ArrayLike<number>;
+    constructor(strip: ArrayLike<number>, id: string, outline: GPUMemoryObject | GPUMemoryPointer, polygon: GPUMemoryObject | GPUMemoryPointer);
+    static fromPointStrip(strip: ArrayLike<number>, id: string, constructor: bufferConstructor): Feature;
 }

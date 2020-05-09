@@ -2,7 +2,7 @@ import pointInPolygon from "point-in-polygon"
 
 export interface spatialElement {
     bBox: boundingBox;
-    shape: Float64Array;
+    shape: ArrayLike<number>;
     id: string;
 }
 
@@ -259,10 +259,10 @@ class BinarySpaceNode<T extends spatialElement> {
             return this.node2.popFirst(x, y)
         }
     }
-    private inShape(shape: Float64Array, x: number, y: number): boolean{
+    private inShape(shape: ArrayLike<number>, x: number, y: number): boolean{
         return pointInPolygon([x, y], this.asPointArray(shape))
     }
-    private asPointArray(shape: Float64Array): number[][] {
+    private asPointArray(shape: ArrayLike<number>): number[][] {
         let ret: number[][] = [];
         for (let i = 0; i < shape.length; i += 2) {
             ret.push([shape[i], shape[i + 1]]);
