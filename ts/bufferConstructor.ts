@@ -14,7 +14,7 @@ export class bufferConstructor {
     private xScale: number;
     private yAdd: number;
     private yScale: number;
-    constructor(bBox: BoundingBox) {
+    constructor(bBox: BoundingBox,) {
         this.xAdd = -bBox.x1;
         this.xScale = 1 / (bBox.x2 - bBox.x1);
         this.yAdd = -bBox.y1;

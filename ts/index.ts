@@ -69,6 +69,7 @@ export class GeoMap{
     }
 
     private loop(){
+        this.inputHandler.pollEvents();
         if(this.invalidated){
             this.render();
             this.invalidated = false;
@@ -89,7 +90,7 @@ export class GeoMap{
         })
     }
     createLayer(name: string, zIndex: number = 0): Layer {
-        return new mapLayer(name, this.bBox, this.bufferConstructor, zIndex);
+        return new mapLayer(name, this.bBox, this.bufferConstructor, this.invalidate.bind(this), zIndex);
     }
     addLayer(layer: Layer): void{
         this.layers.push(layer);

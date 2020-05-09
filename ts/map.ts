@@ -12,18 +12,20 @@ export class mapLayer implements Layer{
     private mouseoverListeners: ((arg0: Feature)=>void)[] = [];
     private pointerdownListeners: ((arg0: Feature)=>void)[] = [];
     private pointerupListeners: ((arg0: Feature)=>void)[] = [];
+    private invalidateCallback: ()=>void;
     zIndex: number;
     name: string;
     outlines: GPUBufferSet;
     polygons: GPUBufferSet;
     styleTable: { polygon: Float32Array[], outline: Float32Array[] };
 
-    constructor(name: string, bBox: BoundingBox, bufferConstructor: bufferConstructor, zIndex = 0) {
+    constructor(name: string, bBox: BoundingBox, bufferConstructor: bufferConstructor, invalidateCallback: ()=>void, zIndex = 0) {
         this.name = name;
         this.bBox = bBox;
         this.zIndex = zIndex;
         this.outlines = GPUBufferSet.create([2*4, 2*4, 1*4]);
         this.polygons = GPUBufferSet.create([2*4, 1*4]);
+        this.invalidateCallback = invalidateCallback;
         this.styleTable = { polygon: [new Float32Array(128 * 4), new Float32Array(128 * 4)], outline: [new Float32Array(128 * 4), new Float32Array(128 * 4)] }
         this.featureTree = new BinarySpaceTree(new boundingBox(bBox.x1, bBox.y1, bBox.x2, bBox.y2));
         this.bufferConstructor = bufferConstructor
@@ -65,12 +67,14 @@ export class mapLayer implements Layer{
                 new GPUMemoryPointer(outlineMemoryPointers.offsets[i], outlineMemoryPointers.widths[i]),
                 new GPUMemoryPointer(polygonMemoryPointers.offsets[i], polygonMemoryPointers.widths[i])))
         }
+        this.invalidateCallback();
     }
     addFeature(pointStrip: Float64Array, id: string){
         let feature = Feature.fromPointStrip(pointStrip, id, this.bufferConstructor);
         this.outlines.add(feature.outline as GPUMemoryObject);
         this.polygons.add(feature.polygon as GPUMemoryObject);
         this.featureTree.insert(feature);
+        this.invalidateCallback();
     }
     selectByPoint(x: number, y: number): Feature | undefined {
         return this.featureTree.findFirst(x, y) as Feature;
@@ -83,6 +87,7 @@ export class mapLayer implements Layer{
     }
     remove(feature: Feature): void {
         this.featureTree.remove(feature);
+        this.invalidateCallback();
     }
     popByPoint(x: number, y: number): void {
         let removed = this.featureTree.popFirst(x, y) as Feature;
@@ -92,6 +97,7 @@ export class mapLayer implements Layer{
         } else {
             console.warn("No feature in selected location")
         }
+        this.invalidateCallback();
     }
     setStyle(feature: Feature, style: number) {
         if (feature === undefined) {
@@ -120,6 +126,7 @@ export class mapLayer implements Layer{
             feature.polygon.GPUData[1] = styleData;
         }
         this.polygons.update(feature.polygon, 1);
+        this.invalidateCallback();
     }
     setStyleTable(type: "polygon" | "outline", zoomLevel: "in" | "out", styleIndex: number, r: number, g: number, b: number, thickness?: number): void {
         if (type === "polygon") {
@@ -146,6 +153,7 @@ export class mapLayer implements Layer{
                 }
             }
         }
+        this.invalidateCallback();
     }
     setStyleTableFromArray(type: "polygon" | "outline", zoomInArray: ArrayLike<number>, zoomOutArray: ArrayLike<number>, offset: number = 0) {
         if(type === "polygon"){
@@ -155,5 +163,6 @@ export class mapLayer implements Layer{
             this.styleTable.outline[0].set(zoomInArray, offset);
             this.styleTable.outline[1].set(zoomOutArray, offset);
         }
+        this.invalidateCallback();
     }
 }

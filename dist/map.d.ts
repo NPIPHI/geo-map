@@ -11,6 +11,7 @@ export declare class mapLayer implements Layer {
     private mouseoverListeners;
     private pointerdownListeners;
     private pointerupListeners;
+    private invalidateCallback;
     zIndex: number;
     name: string;
     outlines: GPUBufferSet;
@@ -19,7 +20,7 @@ export declare class mapLayer implements Layer {
         polygon: Float32Array[];
         outline: Float32Array[];
     };
-    constructor(name: string, bBox: BoundingBox, bufferConstructor: bufferConstructor, zIndex?: number);
+    constructor(name: string, bBox: BoundingBox, bufferConstructor: bufferConstructor, invalidateCallback: () => void, zIndex?: number);
     addEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", callback: (arg0: Feature) => void): void;
     callEventListener(type: "hover" | "mouseover" | "pointerdown" | "pointerup", point: {
         x: number;

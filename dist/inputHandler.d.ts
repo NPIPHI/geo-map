@@ -9,13 +9,16 @@ export declare class inputHandler {
     private newTouch;
     private invalidate;
     private canvas;
+    private canvasCorner;
+    private lastMouseAction;
     minimumHoverTime: number;
-    maximumHoverDistance: number;
     smoothTransitionFactor: number;
     constructor(canvas: HTMLCanvasElement, camera: camera, invalidateCallback: () => void);
+    pollEvents(): void;
     private resizeCanvas;
     private invalidateCanvas;
     private touchstart;
+    private offsetPoint;
     private touchmove;
     private touchend;
     private updateTouches;
