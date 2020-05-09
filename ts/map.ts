@@ -96,14 +96,11 @@ export class mapLayer implements Layer{
         if (removed) {
             this.polygons.remove(removed.polygon);
             this.outlines.remove(removed.outline);
-        } else {
-            console.warn("No feature in selected location")
         }
         this.invalidateCallback();
     }
     setStyle(feature: Feature, style: number) {
         if (feature === undefined) {
-            console.warn("feature was undefined");
             return
         }
         let styleData = new Int32Array(feature.outline.GPUWidth);

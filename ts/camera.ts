@@ -23,6 +23,9 @@ export class camera {
         if(width && height){
             this.setAespectRatio(width, height);
         }
+        matrix.mat3.fromScaling(this._view, [2, 2])
+        matrix.mat3.translate(this._view, this._view, [-0.5, -0.5])
+        matrix.mat3.invert(this.inverseView, this._view);
         this.setWorldSpace(worldRegion);
     }
     get view(): matrix.mat3{
