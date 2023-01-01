@@ -16,7 +16,7 @@
     "earcut": "^2.2.2",
     "gl-matrix": "^3.3.0",
     "point-in-polygon": "^1.0.1",
-    "ts-loader": "^7.0.1"
+    "ts-loader": "^9.4.2"
   },
   "devDependencies": {
     "@types/gl-matrix": "^2.4.5",
